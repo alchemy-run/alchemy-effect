@@ -1,0 +1,40 @@
+{
+  "name": "alchemy-effect",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "module": "./lib/index.js",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alchemy-run/alchemy"
+  },
+  "scripts": {
+    "build": "bun tsc -b"
+  },
+  "workspaces": {
+    "catalog": {
+      "@cloudflare/workers-types": "^4.20250805.0",
+      "@cloudflare/vite-plugin": "^1.13.12",
+      "vite": "^7.1.9",
+      "typescript": "^5.8.3",
+      "wrangler": "^4.42.2",
+      "effect": "^3.18.4",
+      "@effect/platform-node": "^0.98.3",
+      "@effect/platform": "^0.92.1"
+    },
+    "packages": [
+      "@alchemy.run/*"
+    ]
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@types/bun": "latest",
+    "@types/node": "latest",
+    "@vitest/ui": "^3.1.4",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "oxfmt": "^0.5.0"
+  }
+}

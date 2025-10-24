@@ -1,0 +1,55 @@
+{
+  "typescript.experimental.useTsgo": false,
+  "oxc.fmt.experimental": true,
+  "editor.codeLens": false,
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.ruff": "always",
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "rewrap.autoWrap.enabled": false,
+  "[rust]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml"
+  },
+  "[json]": {
+    "editor.indentSize": 2,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  },
+  "[mdx]": {
+    "editor.defaultFormatter": null,
+    "editor.formatOnSave": false
+  },
+  "editor.inlayHints.enabled": "offUnlessPressed",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  },
+  "vitest.disableWorkspaceWarning": true,
+  "[typescript]": {
+    "editor.indentSize": 2,
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[javascript]": {
+    "editor.indentSize": 2,
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[tsx]": {
+    "editor.indentSize": 2,
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[jsx]": {
+    "editor.indentSize": 2,
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  }
+}

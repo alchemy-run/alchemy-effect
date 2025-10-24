@@ -1,0 +1,44 @@
+{
+  "name": "@alchemy.run/effect-cloudflare",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "author": "Sam Goodwin <sam@alchemy.run>",
+  "homepage": "https://alchemy.run",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sam-goodwin/alchemy.git",
+    "directory": "alchemy"
+  },
+  "type": "module",
+  "module": "./lib/index.js",
+  "sideEffects": false,
+  "files": [
+    "bin",
+    "lib",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "import": "./lib/index.js",
+      "types": "./lib/index.d.ts"
+    }
+  },
+  "peerDependencies": {
+    "@alchemy.run/effect": "workspace:*",
+    "@effect/platform-node": "*",
+    "@effect/platform": "*",
+    "effect": "*"
+  },
+  "dependencies": {
+    "effect": "^3.17.14",
+    "cloudflare": "^5.2.0"
+  },
+  "devDependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@effect/platform-node": "catalog:",
+    "@effect/platform": "catalog:",
+    "@types/bun": "latest",
+    "@types/node": "latest"
+  }
+}

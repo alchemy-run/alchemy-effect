@@ -1,0 +1,46 @@
+{
+  "name": "@alchemy.run/effect",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "author": "Sam Goodwin <sam@alchemy.run>",
+  "homepage": "https://alchemy.run",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sam-goodwin/alchemy.git",
+    "directory": "alchemy"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "bin",
+    "lib",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "import": "./lib/index.js",
+      "types": "./src/index.d.ts"
+    }
+  },
+  "devDependencies": {
+    "@effect/platform-node": "catalog:",
+    "@effect/platform": "catalog:",
+    "@types/bun": "latest",
+    "@types/node": "latest",
+    "effect": "catalog:"
+  },
+  "peerDependencies": {
+    "@effect/platform": "*",
+    "@effect/platform-node": "*",
+    "effect": "*"
+  },
+  "peerDependenciesMeta": {
+    "@effect/platform": {
+      "optional": true
+    },
+    "@effect/platform-node": {
+      "optional": true
+    }
+  }
+}
