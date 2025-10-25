@@ -40,15 +40,15 @@ export interface Capability<Type extends string = string, Resource = unknown> {
 
 export declare namespace Capability {
   // @ts-expect-error
-  type Instance<Cap extends Capability, A> = (Cap["constructor"] & {
+  export type Instance<Cap extends Capability, A> = (Cap["constructor"] & {
     resource: A;
   })["construct"];
 
-  type Attr<Cap> = Extract<
+  export type Attr<Cap> = Extract<
     Cap,
     { resource: { attr: unknown } }
   >["resource"]["attr"];
-  type Concrete = Capability & {
+  export type Concrete = Capability & {
     resource: Resource;
   };
 }

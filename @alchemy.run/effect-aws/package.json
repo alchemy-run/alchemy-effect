@@ -60,7 +60,7 @@
     "@clack/prompts": "^0.11.0",
     "@rspack/core": "^1.5.7",
     "@smithy/node-config-provider": "^4.0.0",
-    "@types/aws-lambda": "^8.10.152",
+    "@types/aws-lambda": "catalog:",
     "aws4fetch": "^1.0.20",
     "effect": "^3.17.14",
     "fast-xml-parser": "^5.2.5",

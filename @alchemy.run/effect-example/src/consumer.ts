@@ -5,14 +5,9 @@ import * as Effect from "effect/Effect";
 import { Messages } from "./messages.ts";
 
 // business logic
-export class Consumer extends Lambda.consume(
-  "Consumer",
-  {
-    main: import.meta.filename,
-    queue: Messages,
-    bindings: $(SQS.SendMessage(Messages)),
-  },
-  Effect.fn(function* (batch) {
+export class Consumer extends Lambda.consume("Consumer", {
+  queue: Messages,
+  handle: Effect.fn(function* (batch) {
     for (const record of batch.Records) {
       console.log(record);
       yield* SQS.sendMessage(Messages, {
@@ -21,7 +16,11 @@ export class Consumer extends Lambda.consume(
       }).pipe(Effect.catchAll(() => Effect.void));
     }
   }),
-) {}
+})({
+  main: import.meta.filename,
+  bindings: $(SQS.SendMessage(Messages)),
+  memory: 128,
+}) {}
 
 // runtime handler
 export default Consumer.pipe(

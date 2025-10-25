@@ -16,14 +16,15 @@
   },
   "workspaces": {
     "catalog": {
-      "@cloudflare/workers-types": "^4.20250805.0",
       "@cloudflare/vite-plugin": "^1.13.12",
-      "vite": "^7.1.9",
-      "typescript": "^5.8.3",
-      "wrangler": "^4.42.2",
-      "effect": "^3.18.4",
+      "@cloudflare/workers-types": "^4.20250805.0",
       "@effect/platform-node": "^0.98.3",
-      "@effect/platform": "^0.92.1"
+      "@effect/platform": "^0.92.1",
+      "@types/aws-lambda": "^8.10.152",
+      "effect": "^3.18.4",
+      "typescript": "^5.8.3",
+      "vite": "^7.1.9",
+      "wrangler": "^4.42.2"
     },
     "packages": [
       "@alchemy.run/*"

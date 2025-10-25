@@ -28,13 +28,8 @@ const MonitorSimple = <
     schema: Message,
   }) {}
 
-  return Lambda.Function(
-    id,
-    {
-      main: import.meta.filename,
-      bindings: props.bindings.and(SQS.SendMessage(Messages)),
-    },
-    Effect.fn(function* (event, context) {
+  return Lambda.Function(id, {
+    handle: Effect.fn(function* (event, context) {
       yield* SQS.sendMessage(Messages, {
         id: 1,
         value: "1",
@@ -42,7 +37,10 @@ const MonitorSimple = <
 
       return yield* onAlarm(event);
     }),
-  );
+  })({
+    main: import.meta.filename,
+    bindings: props.bindings.and(SQS.SendMessage(Messages)),
+  });
 };
 
 export interface MonitorComplexProps<ReqAlarm, ReqResolved>
@@ -71,39 +69,31 @@ const MonitorComplex = <const ID extends string, ReqAlarm, ReqResolved>(
     schema: Message,
   }) {}
 
-  return {
-    // The only way we can allow two functions (onAlarm and onResolved) to be passed in
-    // and properly infer the policy is to curry, or else the Policy<T> types always distribute
-    // e.g. Policy<ReqAlarm> | Policy<ReqResolved> instead of Policy<ReqAlarm | ReqResolved>
-    // TODO(sam): this is ugly AF
-    make: ({
+  return ({
+    main,
+    bindings,
+  }: {
+    main: string;
+    bindings: Policy<Extract<ReqAlarm | ReqResolved, Capability>>;
+  }) =>
+    Lambda.consume(id, {
+      queue: Messages,
+      handle: Effect.fn(function* (batch) {
+        yield* SQS.sendMessage(Messages, {
+          id: 1,
+          value: "1",
+        }).pipe(Effect.catchAll(() => Effect.void));
+        if (props.onAlarm) {
+          yield* props.onAlarm(batch);
+        }
+        if (props.onResolved) {
+          yield* props.onResolved(batch);
+        }
+      }),
+    })({
       main,
-      bindings,
-    }: {
-      main: string;
-      bindings: Policy<Extract<ReqAlarm | ReqResolved, Capability>>;
-    }) =>
-      Lambda.consume(
-        id,
-        {
-          main,
-          queue: Messages,
-          bindings: bindings.and(SQS.SendMessage(Messages)),
-        },
-        Effect.fn(function* (batch) {
-          yield* SQS.sendMessage(Messages, {
-            id: 1,
-            value: "1",
-          }).pipe(Effect.catchAll(() => Effect.void));
-          if (props.onAlarm) {
-            yield* props.onAlarm(batch);
-          }
-          if (props.onResolved) {
-            yield* props.onResolved(batch);
-          }
-        }),
-      ),
-  };
+      bindings: bindings.and(SQS.SendMessage(Messages)),
+    });
 };
 
 // src/my-api.ts
@@ -140,7 +130,7 @@ export class MyMonitor extends MonitorComplex("MyMonitor", {
       );
     }
   }),
-}).make({
+})({
   main: import.meta.filename,
   bindings: $(SQS.SendMessage(Outer)),
 }) {}

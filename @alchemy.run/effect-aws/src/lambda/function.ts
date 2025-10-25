@@ -13,13 +13,14 @@ import * as IAM from "../iam.ts";
 export const FunctionType = "AWS.Lambda.Function";
 export type FunctionType = typeof FunctionType;
 
-export type FunctionProps = {
+export type FunctionProps<Req = any> = {
   main: string;
   handler?: string;
   memory?: number;
   runtime?: "nodejs20x" | "nodejs22x";
   architecture?: "x86_64" | "arm64";
   url?: boolean;
+  bindings: Policy<Extract<Req, Capability>>;
 };
 
 export type FunctionAttr<Props extends FunctionProps = FunctionProps> = {
@@ -49,24 +50,19 @@ export interface FunctionRuntime<
 }
 export const FunctionRuntime = Runtime(FunctionType)<FunctionRuntime>();
 
-export const Function = <
-  const ID extends string,
-  const Props extends FunctionProps,
-  In,
-  Out,
-  Req,
->(
-  id: ID,
-  props: Props & {
-    bindings: Policy<Extract<Req, Capability>>;
-  },
-  handle: (input: In, context: LambdaContext) => Effect<Out, never, Req>,
-) =>
-  Alchemy.bind(
-    FunctionRuntime,
-    Alchemy.Service(id, handle, props.bindings),
-    props,
-  );
+export const Function =
+  <const ID extends string, In, Out, Req>(
+    id: ID,
+    { handle }: {
+      handle: (input: In, context: LambdaContext) => Effect<Out, never, Req>;
+    },
+  ) =>
+  <const Props extends FunctionProps<Req>>(props: Props) =>
+    Alchemy.bind(
+      FunctionRuntime,
+      Alchemy.Service(id, handle, props.bindings),
+      props,
+    );
 
 export type FunctionProvider = Provider<
   FunctionRuntime<unknown, unknown, FunctionProps>
