@@ -1,4 +1,4 @@
-import { $, Policy } from "@alchemy.run/effect";
+import { Policy } from "@alchemy.run/effect";
 import type {
   Context as LambdaContext,
   SQSBatchResponse,
@@ -12,15 +12,22 @@ import * as Lambda from "./function.ts";
 export const consume =
   <Q extends SQS.Queue, ID extends string, Req>(
     id: ID,
-    { queue, handle }: {
+    {
+      queue,
+      handle,
+    }: {
       queue: Q;
       handle: (
+        this: unknown,
         event: SQS.QueueEvent<Q["props"]["schema"]["Type"]>,
         context: LambdaContext,
       ) => Effect.Effect<SQSBatchResponse | void, never, Req>;
     },
   ) =>
-  <const Props extends Lambda.FunctionProps<Req>>(props: Props) =>
+  <const Props extends Lambda.FunctionProps<Req>>({
+    bindings,
+    ...props
+  }: Props) =>
     Lambda.Function(id, {
       handle: Effect.fn(function* (event: SQSEvent, context: LambdaContext) {
         yield* Policy.declare<SQS.Consume<Q>>();
@@ -29,7 +36,7 @@ export const consume =
             Effect.fn(function* (record) {
               return {
                 ...record,
-                body: yield* S.validate(queue.props.schema)(record.body).pipe(
+                body: yield* S.validate(queue.input.schema)(record.body).pipe(
                   Effect.catchAll(() => Effect.void),
                 ),
               };
@@ -53,4 +60,4 @@ export const consume =
           ],
         } satisfies SQSBatchResponse;
       }),
-    })({ ...props, bindings: $(SQS.Consume(queue)) });
+    })({ ...props, bindings: bindings.and(SQS.Consume(queue)) });

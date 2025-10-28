@@ -1,27 +1,22 @@
-import * as Alchemy from "@alchemy.run/effect";
 import {
   Binding,
-  Capability,
-  Policy,
   Provider,
   Runtime,
+  type Capability,
+  type RuntimeHandler,
+  type RuntimeProps,
 } from "@alchemy.run/effect";
 import type { Context as LambdaContext } from "aws-lambda";
-import type { Effect } from "effect/Effect";
 import * as IAM from "../iam.ts";
 
-export const FunctionType = "AWS.Lambda.Function";
-export type FunctionType = typeof FunctionType;
-
-export type FunctionProps<Req = any> = {
+export interface FunctionProps<Req = any> extends RuntimeProps<Function, Req> {
   main: string;
   handler?: string;
   memory?: number;
   runtime?: "nodejs20x" | "nodejs22x";
   architecture?: "x86_64" | "arm64";
   url?: boolean;
-  bindings: Policy<Extract<Req, Capability>>;
-};
+}
 
 export type FunctionAttr<Props extends FunctionProps = FunctionProps> = {
   functionArn: string;
@@ -34,46 +29,29 @@ export type FunctionAttr<Props extends FunctionProps = FunctionProps> = {
   };
 };
 
-export interface FunctionRuntime<
-  svc = unknown,
-  cap = unknown,
-  props = FunctionProps,
-> extends Runtime<FunctionType, svc, cap, props> {
+export interface Function<
+  Handler extends
+    | RuntimeHandler<[event: any, context: LambdaContext]>
+    | unknown = unknown,
+  Props extends FunctionProps<RuntimeHandler.Caps<Handler>> | unknown = unknown,
+> extends Runtime<"AWS.Lambda.Function", Handler, Props> {
+  readonly Constructor: Function;
   readonly Provider: FunctionProvider;
   readonly Binding: FunctionBinding<this["capability"]>;
-  readonly Instance: FunctionRuntime<
-    this["service"],
-    this["capability"],
-    this["props"]
-  >;
+  readonly Instance: Function<this["handler"], this["props"]>;
+
   readonly attr: FunctionAttr<Extract<this["props"], FunctionProps>>;
 }
-export const FunctionRuntime = Runtime(FunctionType)<FunctionRuntime>();
+export const Function = Runtime("AWS.Lambda.Function")<Function>();
 
-export const Function =
-  <const ID extends string, In, Out, Req>(
-    id: ID,
-    { handle }: {
-      handle: (input: In, context: LambdaContext) => Effect<Out, never, Req>;
-    },
-  ) =>
-  <const Props extends FunctionProps<Req>>(props: Props) =>
-    Alchemy.bind(
-      FunctionRuntime,
-      Alchemy.Service(id, handle, props.bindings),
-      props,
-    );
-
-export type FunctionProvider = Provider<
-  FunctionRuntime<unknown, unknown, FunctionProps>
->;
-
-export interface FunctionBinding<Cap extends Capability.Concrete>
+export interface FunctionBinding<Cap extends Capability>
   extends Binding<
-    FunctionRuntime,
+    Function,
     Cap,
     {
       env: Record<string, string>;
       policyStatements: IAM.PolicyStatement[];
     }
   > {}
+
+export type FunctionProvider = Provider<Function>;

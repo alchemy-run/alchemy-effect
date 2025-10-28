@@ -83,7 +83,7 @@ export const apply = <const P extends Plan, Err, Req>(
                       id: node.resource.id,
                       type: node.resource.type,
                       status: node.action === "create" ? "created" : "updated",
-                      props: node.resource.props,
+                      props: node.resource.input,
                       output,
                       bindings: node.bindings.map((binding) => ({
                         ...binding,
@@ -196,19 +196,21 @@ export const apply = <const P extends Plan, Err, Req>(
                   });
                   const create = Effect.gen(function* () {
                     yield* report("creating");
-                    return yield* node.provider
-                      .create({
-                        id,
-                        news: node.news,
-                        // TODO(sam): these need to only include attach actions
-                        bindings: hydrate(yield* apply(node.bindings)),
-                        session: scopedSession,
-                      })
-                      // TODO(sam): delete and create will conflict here, we need to extend the state store for replace
-                      .pipe(
-                        checkpoint,
-                        Effect.tap(() => report("created")),
-                      );
+                    return yield* (
+                      node.provider
+                        .create({
+                          id,
+                          news: node.news,
+                          // TODO(sam): these need to only include attach actions
+                          bindings: hydrate(yield* apply(node.bindings)),
+                          session: scopedSession,
+                        })
+                        // TODO(sam): delete and create will conflict here, we need to extend the state store for replace
+                        .pipe(
+                          checkpoint,
+                          Effect.tap(() => report("created")),
+                        )
+                    );
                   });
                   if (!node.deleteFirst) {
                     const outputs = yield* create;

@@ -1,5 +1,6 @@
 {
   "typescript.experimental.useTsgo": false,
+  "typescript.tsdk": "node_modules/typescript/lib",
   "oxc.fmt.experimental": true,
   "editor.codeLens": false,
   "editor.formatOnSave": true,
@@ -51,5 +52,6 @@
   "[jsx]": {
     "editor.indentSize": 2,
     "editor.defaultFormatter": "oxc.oxc-vscode"
-  }
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

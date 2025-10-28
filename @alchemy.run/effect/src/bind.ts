@@ -1,9 +1,6 @@
 import * as Effect from "effect/Effect";
-import * as util from "util";
-import { Capability } from "./capability.ts";
-import type { Resource } from "./resource.ts";
-import type { Runtime } from "./runtime.ts";
-import { Service } from "./service.ts";
+import type { Capability } from "./capability.ts";
+import type { Runtime, RuntimeHandler } from "./runtime.ts";
 
 export const isBound = (value: any): value is Bound =>
   value && typeof value === "object" && value.type === "bound";
@@ -13,43 +10,41 @@ export type Bound<Run extends Runtime = Runtime<string, any, any>> = {
   runtime: Run;
 };
 
+export type Bind<
+  Run extends Runtime,
+  ID extends string,
+  Handler extends RuntimeHandler,
+  Props extends Run["props"],
+> = ReturnType<typeof bind<Run, ID, Handler, Props>>;
+
 export const bind = <
   Run extends Runtime,
-  Svc extends Service,
+  const ID extends string,
+  Handler extends RuntimeHandler,
   const Props extends Run["props"],
 >(
-  Run: Run,
-  Svc: Svc,
-  // Policy: Policy<
-  //   Extract<
-  //     Svc["capability"] | Effect.Effect.Context<ReturnType<Svc["impl"]>>,
-  //     Capability
-  //   >
-  // >,
-  Props: Props,
+  runtime: Run,
+  id: ID,
+  handler: Handler,
+  props: Props,
 ) => {
-  type Cap = Extract<
-    Svc["capability"] | Effect.Effect.Context<ReturnType<Svc["impl"]>>,
-    Capability
-  >;
-
-  type Service = Resource.Instance<Svc>;
+  type Cap = Extract<Effect.Effect.Context<ReturnType<Handler>>, Capability>;
 
   type Plan = {
-    [id in Svc["id"]]: Bound<
+    [id in ID]: Bound<
       // @ts-expect-error
-      (Run & { svc: Service; cap: Cap; props: Props })["Instance"]
+      (Run & { handler: Handler; cap: Cap; props: Props })["Instance"]
     >;
   } & {
     [id in Exclude<
       Extract<Cap["resource"], { id: string }>["id"],
-      Svc["id"]
+      ID
     >]: Extract<Cap["resource"], { id: id }>;
   };
 
   type Providers<C extends Capability> = C extends any
     ?
-        | Runtime.Provider<Run, C, Service, Props>
+        | Run["Provider"]
         | Runtime.Binding<
             Run,
             // @ts-expect-error
@@ -57,18 +52,19 @@ export const bind = <
           >
     : never;
 
+  // oxlint-disable-next-line require-yield
   const eff = Effect.gen(function* () {
     const self = {
-      ...Run,
-      id: Svc.id,
-      service: Svc,
-      capability: Svc.policy?.capabilities as any,
-      parent: Run,
-      props: Props,
+      ...runtime,
+      id,
+      handler,
+      // capability: service.policy?.capabilities as any,
+      parent: runtime,
+      props,
     };
     return {
       ...(Object.fromEntries(
-        Svc.policy?.capabilities.map((cap: any) => [
+        service.policy?.capabilities.map((cap: any) => [
           cap.resource.id,
           cap.resource,
         ]) ?? [],
@@ -76,17 +72,11 @@ export const bind = <
         // @ts-expect-error
         [id in Cap["resource"]["id"]]: Extract<Cap["resource"], { id: id }>;
       }),
-      [Svc.id]: {
+      [service.id]: {
         runtime: self,
         type: "bound",
         toString() {
           return `${self}` as const;
-        },
-        [Symbol.toStringTag]() {
-          return this.toString();
-        },
-        [util.inspect.custom]() {
-          return this.toString();
         },
       },
     };
@@ -100,7 +90,7 @@ export const bind = <
   >;
   return Object.assign(
     class {
-      static readonly props = Props;
+      static readonly props = props;
     },
     eff,
     {

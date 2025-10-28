@@ -1,20 +1,14 @@
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 
-import { Capability, Policy } from "@alchemy.run/effect";
-import { FunctionRuntime } from "../lambda/index.ts";
+import { Policy, type Capability, type Declared } from "@alchemy.run/effect";
+import { Function, type FunctionBinding } from "../lambda/index.ts";
 import { QueueClient } from "./queue.client.ts";
 import { Queue } from "./queue.ts";
 
-export interface SendMessage<Resource = unknown>
-  extends Capability<"AWS.SQS.SendMessage", Resource> {
-  constructor: SendMessage;
-  construct: SendMessage<this["instance"]>;
-}
-export const SendMessage = Capability<SendMessage>("AWS.SQS.SendMessage");
+export interface SendMessage<Q> extends Capability<"AWS.SQS.SendMessage", Q> {}
 
 export const sendMessage = <Q extends Queue>(
-  queue: Q,
+  queue: Declared<Q>,
   message: Q["props"]["schema"]["Type"],
 ) =>
   Effect.gen(function* () {
@@ -28,25 +22,28 @@ export const sendMessage = <Q extends Queue>(
     });
   });
 
+export const SendMessage = Function.binding<
+  <Q extends Queue>(queue: Declared<Q>) => FunctionBinding<SendMessage<Q>>
+>("AWS.SQS.SendMessage", Queue);
+
 export const sendMessageFromLambdaFunction = () =>
-  Layer.succeed(
-    FunctionRuntime(SendMessage(Queue)),
-    FunctionRuntime(SendMessage(Queue)).of({
-      attach: Effect.fn(function* (queue, capability) {
-        return {
-          env: {
-            [`${queue.id.toUpperCase().replace(/-/g, "_")}_QUEUE_URL`]:
-              queue.attr.queueUrl,
+  SendMessage.layer.succeed({
+    // oxlint-disable-next-line require-yield
+    attach: Effect.fn(function* (queue, _props, _target) {
+      return {
+        env: {
+          // ask what attribute is needed to interact? e.g. is it the Queue ARN or the Queue URL?
+          [`${queue.id.toUpperCase().replace(/-/g, "_")}_QUEUE_URL`]:
+            queue.attr.queueUrl,
+        },
+        policyStatements: [
+          {
+            Sid: capability.sid,
+            Effect: "Allow",
+            Action: ["sqs:SendMessage"], // <- ask LLM how to generate this
+            Resource: [queue.attr.queueArn],
           },
-          policyStatements: [
-            {
-              Sid: capability.sid,
-              Effect: "Allow",
-              Action: ["sqs:SendMessage"],
-              Resource: [queue.attr.queueArn],
-            },
-          ],
-        };
-      }),
+        ],
+      };
     }),
-  );
+  });
