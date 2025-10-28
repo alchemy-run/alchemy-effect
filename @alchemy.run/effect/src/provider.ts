@@ -30,6 +30,9 @@ export interface ProviderService<Res extends Resource = Resource> {
   // tail();
   // watch();
   // replace(): Effect.Effect<void, never, never>;
+
+  // different interface that is persistent, watching, reloads
+  // run?() {}
   read?(input: {
     id: string;
     olds: Res["props"] | undefined;

@@ -22,7 +22,7 @@
       "@effect/platform": "^0.92.1",
       "@types/aws-lambda": "^8.10.152",
       "effect": "^3.18.4",
-      "typescript": "^5.8.3",
+      "typescript": "^5.9.3",
       "vite": "^7.1.9",
       "wrangler": "^4.42.2"
     },

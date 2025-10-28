@@ -5,12 +5,23 @@ import { Resource } from "@alchemy.run/effect";
 // required to avoid this error in consumers: "The inferred type of 'Messages' cannot be named without a reference to '../../effect-aws/node_modules/@types/aws-lambda'. This is likely not portable. A type annotation is necessary.ts(2742)"
 export type * as lambda from "aws-lambda";
 
-export const Queue = Resource<Queue>("AWS.SQS.Queue");
+export const Queue = Resource<{
+  <const ID extends string, const Props extends QueueProps>(
+    id: ID,
+    props: Props,
+  ): Queue<ID, Props>;
+}>("AWS.SQS.Queue");
 
-export interface Queue extends Resource<"AWS.SQS.Queue"> {
-  props: QueueProps;
-  attr: QueueAttr<this["props"]>;
-}
+export interface Queue<
+  ID extends string = string,
+  Props extends QueueProps = QueueProps,
+> extends Resource<"AWS.SQS.Queue", ID, Props, QueueAttrs<Props>> {}
+
+export type QueueAttrs<Props extends QueueProps> = {
+  queueName: Props["queueName"] extends string ? Props["queueName"] : string;
+  queueUrl: Props["fifo"] extends true ? `${string}.fifo` : string;
+  queueArn: `arn:aws:sqs:${string}:${string}:${Props["queueName"]}`;
+};
 
 export type QueueProps<Msg = any> = {
   /**
@@ -73,12 +84,3 @@ export type QueueProps<Msg = any> = {
       fifoThroughputLimit?: "perQueue" | "perMessageGroupId";
     }
 );
-
-export interface QueueAttr<Props extends QueueProps> {
-  queueName: Props["queueName"] extends string ? Props["queueName"] : string;
-  /**
-   * URL of the queue.
-   */
-  queueUrl: Props["fifo"] extends true ? `${string}.fifo` : string;
-  queueArn: `arn:aws:sqs:${string}:${string}:${this["queueName"]}`;
-}

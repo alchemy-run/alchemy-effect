@@ -1,32 +1,28 @@
-import util from "node:util";
-
 import type { Types } from "effect";
 import * as Context from "effect/Context";
+import type { Effect } from "effect/Effect";
+import type { Layer } from "effect/Layer";
+import { bind, type Bind } from "./bind.ts";
+import type { Binding, BindingService } from "./binding.ts";
 import type { Capability } from "./capability.ts";
-import type { Resource } from "./resource.ts";
-import type { Service } from "./service.ts";
+import type { Policy } from "./policy.ts";
 
-export interface RuntimeType<
-  Type extends string = string,
-  Svc = unknown,
-  Cap = unknown,
-  Props = unknown,
-> extends Resource<Type> {
-  new (_: never): {};
-  type: Type;
-  props: Props;
-  /** @internal - we need to use `unknown` or else implicit intersections are performed, so instead we expose the mapped form */
-  svc: Svc;
-  service: Extract<this["svc"], Service>;
-  /** @internal - we need to use `unknown` or else implicit intersections are performed, so instead we expose the mapped form */
-  cap: Cap;
-  capability: Extract<this["cap"], Capability.Concrete>;
+export type RuntimeHandler<
+  Inputs extends any[] = any[],
+  Output = any,
+  Err = any,
+  Req = any,
+> = (...inputs: Inputs) => Effect<Output, Err, Req>;
+
+export declare namespace RuntimeHandler {
+  export type Caps<H extends RuntimeHandler | unknown> = Extract<
+    Effect.Context<ReturnType<Extract<H, RuntimeHandler>>>,
+    Capability
+  >;
 }
+
 export declare namespace Runtime {
-  export type Binding<
-    F extends RuntimeType<string, any, any, any>,
-    Cap,
-  > = F extends {
+  export type Binding<F, Cap> = F extends {
     readonly Binding: unknown;
   }
     ? (F & {
@@ -36,49 +32,94 @@ export declare namespace Runtime {
         readonly F: F;
         readonly cap: Types.Contravariant<Cap>;
       };
-
-  export type Provider<
-    F extends RuntimeType<string, any, any, any>,
-    Cap,
-    Svc,
-    Props,
-    // @ts-expect-error
-  > = (F & {
-    cap: Cap;
-    svc: InstanceType<Extract<Svc, Service>>;
-    props: Props;
-  })["Provider"];
 }
 
-export type AnyRuntime = RuntimeType<string, any, any, any>;
+export type AnyRuntime = Runtime<string>;
+
+export interface RuntimeProps<Runtime, Req> {
+  bindings: Policy<Runtime.Binding<Runtime, Extract<Req, Capability>>>;
+}
 
 export interface Runtime<
   Type extends string = string,
-  Svc = unknown,
-  Cap = unknown,
+  Handler = unknown,
   Props = unknown,
-> extends RuntimeType<Type, Svc, Cap, Props> {
-  <T>(T: T): Runtime.Binding<this, T>;
+> {
+  type: Type;
+  props: Props;
+  handler: Handler;
+  cap: Handler extends unknown
+    ? unknown
+    : Extract<
+        Effect.Context<ReturnType<Extract<Handler, RuntimeHandler<any>>>>,
+        Capability
+      >;
+  capability: Extract<this["cap"], Capability>;
+  Provider: unknown;
+  <const ID extends string, Inputs extends any[], Output, Err, Req>(
+    id: ID,
+    { handle }: { handle: RuntimeHandler<Inputs, Output, Err, Req> },
+  ): <const Props extends this["props"] & RuntimeProps<this, Req>>(
+    props: Props,
+  ) => Bind<this, ID, (...args: Inputs) => Effect<Output, Err, Req>, Props>;
+  binding<F extends (target: any, props?: any) => Binding<this, any>>(
+    type: ReturnType<F>["capability"]["type"],
+    resource: new () => ReturnType<F>["capability"]["resource"],
+  ): F & BindingLayers<this, F>;
+}
+
+export interface BindingLayers<
+  Run extends Runtime,
+  F extends (target: any, props?: any) => any,
+> {
+  layer: {
+    effect<Err, Req>(
+      eff: Effect<
+        BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
+        Err,
+        Req
+      >,
+    ): Layer<
+      BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
+      Err,
+      Req
+    >;
+    succeed(
+      service: BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
+    ): Layer<BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>>;
+  };
 }
 
 export const Runtime =
   <const Type extends string>(type: Type) =>
-  <Self>() =>
-    Object.assign(
-      (cap: Capability) => {
-        const tag = `${type}(${cap})` as const;
-        return class extends Context.Tag(tag)<Self, string>() {
-          Capability = cap;
-          static toString() {
-            return tag;
-          }
-          static [Symbol.toStringTag]() {
-            return this.toString();
-          }
-          static [util.inspect.custom]() {
-            return this.toString();
-          }
-        };
+  <Self extends Runtime>() => {
+    const self = Object.assign(
+      (
+        ...args:
+          | [cap: Capability]
+          | [
+              id: string,
+              { handle: (...args: any[]) => Effect<any, never, any> },
+            ]
+      ) => {
+        if (args.length === 1) {
+          const [cap] = args;
+          const tag = `${type}(${cap})` as const;
+          return class extends Context.Tag(tag)<Self, string>() {
+            Capability = cap;
+          };
+        } else {
+          const [id, { handle }] = args;
+          return (<const Props extends RuntimeProps<Self, any>>(
+            props: Props,
+          ) => {
+            return bind(
+              self as Runtime,
+              Service(id, handle, props.bindings as any),
+              props,
+            );
+          }) as Self;
+        }
       },
       {
         kind: "Runtime",
@@ -88,11 +129,7 @@ export const Runtime =
         toString() {
           return `${this.type}(${this.service?.id}${this.capability?.length ? `, ${this.capability.map((c) => `${c}`).join(", ")}` : ""})`;
         },
-        [Symbol.toStringTag]() {
-          return this.toString();
-        },
-        [util.inspect.custom]() {
-          return this.toString();
-        },
       },
-    ) as Self;
+    ) as unknown as Self;
+    return self;
+  };

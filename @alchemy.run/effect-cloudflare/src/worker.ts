@@ -39,7 +39,7 @@ export const Worker = Runtime(WorkerType)<Worker>();
 
 export type WorkerProvider = Provider<Worker<Service, Capability, WorkerProps>>;
 
-export interface WorkerBinding<Cap extends Capability.Concrete>
+export interface WorkerBinding<Cap extends Capability>
   extends Binding<
     Worker,
     Cap,

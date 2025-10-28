@@ -4,6 +4,50 @@ import * as SQS from "@alchemy.run/effect-aws/sqs";
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
 
+class Message extends S.Class<Message>("Message")({
+  id: S.Int,
+  value: S.String,
+}) {}
+
+const MonitorSimple = <const ID extends string, Req>(
+  id: ID,
+  {
+    onAlarm,
+  }: {
+    onAlarm: (message: Message) => Effect.Effect<void, never, Req>;
+  },
+) => {
+  class Messages extends SQS.Queue(`${id}-Messages`, {
+    fifo: true,
+    schema: Message,
+  }) {}
+
+  return Lambda.consume(id, {
+    queue: Messages,
+    handle: Effect.fn(function* (event) {
+      for (const record of event.Records) {
+        yield* onAlarm(record.body);
+      }
+    }),
+  });
+};
+
+class Outer extends SQS.Queue("Outer", {
+  fifo: true,
+  schema: Message,
+}) {}
+
+export class MySimpleMonitor extends MonitorSimple("MyMonitor", {
+  onAlarm: Effect.fn(function* (message) {
+    yield* SQS.sendMessage(Outer, message).pipe(
+      Effect.catchAll(() => Effect.void),
+    );
+  }),
+})({
+  main: import.meta.filename,
+  bindings: $(SQS.SendMessage(Outer)),
+}) {}
+
 // src/my-component.ts
 
 export interface MonitorComplexProps<ReqAlarm, ReqResolved>
@@ -18,7 +62,10 @@ export interface MonitorComplexProps<ReqAlarm, ReqResolved>
 
 const MonitorComplex = <const ID extends string, ReqAlarm, ReqResolved>(
   id: ID,
-  { onAlarm, onResolved }: {
+  {
+    onAlarm,
+    onResolved,
+  }: {
     onAlarm: (
       batch: SQS.QueueEvent<Message>,
     ) => Effect.Effect<void, never, ReqAlarm>;
@@ -56,49 +103,7 @@ const MonitorComplex = <const ID extends string, ReqAlarm, ReqResolved>(
     });
 };
 
-class Message extends S.Class<Message>("Message")({
-  id: S.Int,
-  value: S.String,
-}) {}
-
-const MonitorSimple = <const ID extends string, Req>(
-  id: ID,
-  { onAlarm }: {
-    onAlarm: (message: Message) => Effect.Effect<void, never, Req>;
-  },
-) => {
-  class Messages extends SQS.Queue(`${id}-Messages`, {
-    fifo: true,
-    schema: Message,
-  }) {}
-
-  return Lambda.consume(id, {
-    queue: Messages,
-    handle: Effect.fn(function* (event) {
-      for (const record of event.Records) {
-        yield* onAlarm(record.body);
-      }
-    }),
-  });
-};
-
 // src/my-api.ts
-
-class Outer extends SQS.Queue("Outer", {
-  fifo: true,
-  schema: Message,
-}) {}
-
-export class MySimpleMonitor extends MonitorSimple("MyMonitor", {
-  onAlarm: Effect.fn(function* (message) {
-    yield* SQS.sendMessage(Outer, message).pipe(
-      Effect.catchAll(() => Effect.void),
-    );
-  }),
-})({
-  main: import.meta.filename,
-  bindings: $(SQS.SendMessage(Outer)),
-}) {}
 
 export class MyMonitor extends MonitorComplex("MyMonitor", {
   onAlarm: Effect.fn(function* (batch) {

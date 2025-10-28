@@ -5,7 +5,7 @@ import { isBound, type Bound } from "./bind.ts";
 import type { Capability, SerializedCapability } from "./capability.ts";
 import type { Phase } from "./phase.ts";
 import { Provider, type ProviderService } from "./provider.ts";
-import type { Resource, ResourceClass } from "./resource.ts";
+import type { Resource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
 import { State, type ResourceState } from "./state.ts";
 
@@ -24,25 +24,25 @@ export const isBindNode = (node: any): node is BindNode => {
 /**
  * A node in the plan that represents a binding operation acting on a resource.
  */
-export type BindNode<Cap extends Capability.Concrete = Capability.Concrete> =
+export type BindNode<Cap extends Capability = Capability> =
   | Attach<Cap>
   | Detach<Cap>
   | NoopBind<Cap>;
 
-export type Attach<Cap extends Capability.Concrete = Capability.Concrete> = {
+export type Attach<Cap extends Capability = Capability> = {
   action: "attach";
   capability: Cap;
   olds?: SerializedCapability<Cap>;
   attributes: Capability.Attr<Cap>;
 };
 
-export type Detach<Cap extends Capability.Concrete = Capability.Concrete> = {
+export type Detach<Cap extends Capability = Capability> = {
   action: "detach";
   capability: Cap;
   attributes: Capability.Attr<Cap>;
 };
 
-export type NoopBind<Cap extends Capability.Concrete = Capability.Concrete> = {
+export type NoopBind<Cap extends Capability = Capability> = {
   action: "noop";
   capability: Cap;
   attributes: Capability.Attr<Cap>;
@@ -162,13 +162,12 @@ type ApplyAll<
     >
   : Accum;
 
-type _Apply<Item extends PlanNode> = Item extends Bound<
-  infer Run extends Runtime<string, any, any>
->
-  ? Apply<Run>
-  : Item extends Resource
-    ? Apply<Item>
-    : never;
+type _Apply<Item extends PlanNode> =
+  Item extends Bound<infer Run extends Runtime<string, any, any>>
+    ? Apply<Run>
+    : Item extends Resource
+      ? Apply<Item>
+      : never;
 
 type DerivePlan<
   P extends Phase = Phase,
@@ -241,12 +240,12 @@ export const plan = <
                         Effect.fn(function* ([id, node]) {
                           const resource = isBound(node) ? node.runtime : node;
                           const news = isBound(node)
-                            ? node.runtime.props
-                            : resource.props;
+                            ? node.runtime.input
+                            : resource.input;
 
                           const oldState = yield* state.get(id);
                           const provider: ProviderService = yield* Provider(
-                            resource.parent as ResourceClass,
+                            resource.parent as Resource,
                           );
                           const capabilities = diffCapabilities(
                             oldState,
@@ -311,7 +310,7 @@ export const plan = <
                                 attributes: undefined!,
                               };
                             }
-                          } else if (compare(oldState, resource.props)) {
+                          } else if (compare(oldState, resource.input)) {
                             return {
                               ...BaseNode,
                               action: "update",
@@ -377,7 +376,7 @@ export const plan = <
                     parent: undefined,
                     type: oldState.type,
                     attr: oldState.output,
-                    props: oldState.props,
+                    input: oldState.props,
                   },
                   downstream: downstream[id] ?? [],
                 } satisfies Delete<Resource>,
@@ -464,8 +463,5 @@ const diffCapabilities = (
   return actions;
 };
 
-const isCapabilityDiff = (
-  oldCap: SerializedCapability,
-  newCap: Capability.Concrete,
-) =>
+const isCapabilityDiff = (oldCap: SerializedCapability, newCap: Capability) =>
   oldCap.action !== newCap.action || oldCap.resource.id !== newCap.resource.id;
