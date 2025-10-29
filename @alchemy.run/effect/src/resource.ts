@@ -10,6 +10,7 @@ export interface Resource<
   Props = unknown,
   Attrs = unknown,
 > extends IResource<Type, ID, Props, Attrs> {
+  parent: unknown;
   // oxlint-disable-next-line no-misused-new
   new (): Resource<Type, ID, Props, Attrs>;
 }
@@ -34,5 +35,7 @@ export const Resource = <Ctor extends (id: string, props: any) => Resource>(
     }
   } as unknown as Ctor & {
     type: ReturnType<Ctor>["type"];
-    new (): ReturnType<Ctor>;
+    new (): ReturnType<Ctor> & {
+      parent: ReturnType<Ctor>;
+    };
   };

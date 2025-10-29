@@ -1,3 +1,4 @@
+import * as Context from "effect/Context";
 import type { Effect } from "effect/Effect";
 import type { Layer } from "effect/Layer";
 import type { Capability } from "./capability.ts";
@@ -13,20 +14,37 @@ export const isBinding = (b: any): b is Binding<any, any, any> =>
 
 export type AnyBinding<F extends Runtime = any> = Binding<F, any, any>;
 
-export interface Binding<
+export type Binding<
   Run extends Runtime,
   Cap extends Capability = Capability,
-  Tag = Cap["type"],
-> {
+  Tag extends string = Cap["type"],
+> = {
   runtime: Run;
   capability: Cap;
-  tag: Tag;
+  tag: BindingTag<Run, Cap, Tag>;
+};
+
+export interface BindingTag<
+  Run extends Runtime,
+  Cap extends Capability,
+  Tag extends string,
+> extends Context.Tag<
+    `${Run["type"]}(${Cap["type"]}, ${Tag})`,
+    BindingService<
+      Run,
+      Extract<Extract<Cap["resource"], Resource>["parent"], Resource>,
+      Run["props"]
+    >
+  > {
+  /** @internal phantom */
+  tagName: Tag;
 }
 
 export const Binding = <F extends (resource: any, props?: any) => AnyBinding>(
   runtime: ReturnType<F>["runtime"],
   resource: new () => ReturnType<F>["capability"]["resource"],
-  tag: ReturnType<F>["tag"],
+  tag: ReturnType<F>["tag"]["tagName"],
+  // _tag: ReturnType<F>,
 ): F & BindingDeclaration<ReturnType<F>["runtime"], F> => {
   type Runtime = ReturnType<F>["runtime"];
   type Tag = ReturnType<F>["tag"];
@@ -93,7 +111,7 @@ export type BindingService<
     },
     to: Props,
     target: Target,
-  ) => Effect.Effect<Partial<Props> | void, never, AttachReq>;
+  ) => Effect<Partial<Props> | void, never, AttachReq>;
   detach?: (
     resource: {
       id: string;
@@ -101,5 +119,5 @@ export type BindingService<
       props: R["props"];
     },
     from: Props,
-  ) => Effect.Effect<void, never, DetachReq>;
+  ) => Effect<void, never, DetachReq>;
 };
