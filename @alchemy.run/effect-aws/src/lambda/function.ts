@@ -1,13 +1,10 @@
 import {
-  Binding,
   Provider,
   Runtime,
-  type Capability,
   type RuntimeHandler,
   type RuntimeProps,
 } from "@alchemy.run/effect";
 import type { Context as LambdaContext } from "aws-lambda";
-import * as IAM from "../iam.ts";
 
 export interface FunctionProps<Req = any> extends RuntimeProps<Function, Req> {
   main: string;
@@ -37,21 +34,10 @@ export interface Function<
 > extends Runtime<"AWS.Lambda.Function", Handler, Props> {
   readonly Constructor: Function;
   readonly Provider: FunctionProvider;
-  readonly Binding: FunctionBinding<this["capability"]>;
   readonly Instance: Function<this["handler"], this["props"]>;
 
   readonly attr: FunctionAttr<Extract<this["props"], FunctionProps>>;
 }
 export const Function = Runtime("AWS.Lambda.Function")<Function>();
-
-export interface FunctionBinding<Cap extends Capability>
-  extends Binding<
-    Function,
-    Cap,
-    {
-      env: Record<string, string>;
-      policyStatements: IAM.PolicyStatement[];
-    }
-  > {}
 
 export type FunctionProvider = Provider<Function>;

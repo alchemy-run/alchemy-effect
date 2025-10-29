@@ -15,4 +15,3 @@ export * from "./provider.ts";
 export * from "./resource.ts";
 export * from "./runtime.ts";
 export * as State from "./state.ts";
-export * from "./tag-instance.ts";

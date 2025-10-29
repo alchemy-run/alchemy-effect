@@ -4,6 +4,14 @@ import * as Effect from "effect/Effect";
 import { Function, type FunctionBinding } from "../lambda/index.ts";
 import { Queue } from "./queue.ts";
 
+export type QueueRecord<Data> = Omit<lambda.SQSRecord, "body"> & {
+  body: Data;
+};
+
+export type QueueEvent<Data> = Omit<lambda.SQSEvent, "Records"> & {
+  Records: QueueRecord<Data>[];
+};
+
 export interface Consume<Q> extends Capability<"AWS.SQS.Consume", Q> {}
 
 export const Consume = Function.binding<
@@ -17,14 +25,6 @@ export const Consume = Function.binding<
     },
   ) => FunctionBinding<Consume<Q>>
 >("AWS.SQS.Consume", Queue);
-
-export type QueueRecord<Data> = Omit<lambda.SQSRecord, "body"> & {
-  body: Data;
-};
-
-export type QueueEvent<Data> = Omit<lambda.SQSEvent, "Records"> & {
-  Records: QueueRecord<Data>[];
-};
 
 export const consumeFromLambdaFunction = () =>
   Consume.layer.succeed({

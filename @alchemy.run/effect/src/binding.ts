@@ -1,60 +1,82 @@
-import * as Context from "effect/Context";
-import type * as Effect from "effect/Effect";
+import type { Effect } from "effect/Effect";
+import type { Layer } from "effect/Layer";
 import type { Capability } from "./capability.ts";
-import type { Policy } from "./policy.ts";
 import type { Resource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
-
-export type Bindings = ReturnType<typeof Bindings>;
-
-export const Bindings = <S extends any[]>(
-  ...capabilities: S
-): Policy<S[number]> => ({
-  capabilities,
-  and: <C extends Capability[]>(...caps: C): Policy<C[number] | S[number]> =>
-    Bindings(...capabilities, ...caps),
-});
-
-export type $ = typeof $;
-export const $ = Bindings;
 
 export interface BindingProps {
   [key: string]: any;
 }
 
+export const isBinding = (b: any): b is Binding<any, any, any> =>
+  "runtime" in b && "capability" in b && "tag" in b && "output" in b;
+
+export type AnyBinding<F extends Runtime = any> = Binding<F, any, any>;
+
 export interface Binding<
   Run extends Runtime,
   Cap extends Capability = Capability,
-  Output = any,
-> extends Context.TagClass<
-    Runtime.Binding<Run, Cap>,
-    `${Cap["action"]}(${Cap["resource"]["type"]}, ${Run["type"]})`,
-    BindingService<Cap["resource"], Output>
-  > {
+  Tag = Cap["type"],
+> {
   runtime: Run;
   capability: Cap;
-  output: Output;
+  tag: Tag;
 }
 
-export const Binding =
-  <
-    const Runtime extends string,
-    Cap extends Capability,
-    Props extends BindingProps,
-  >(
-    runtime: Runtime,
-    capability: Cap,
-  ) =>
-  <Self>(): Self =>
-    Object.assign(
-      Context.Tag(
-        `${capability.action}(${capability.resource.type}, ${runtime})` as `${Cap["action"]}(${Cap["resource"]["type"]}, ${Runtime})`,
-      )<Self, BindingService<Cap["resource"], Props>>(),
-      {
-        Kind: "Binding",
-        Capability: capability,
+export const Binding = <F extends (resource: any, props?: any) => AnyBinding>(
+  runtime: ReturnType<F>["runtime"],
+  resource: new () => ReturnType<F>["capability"]["resource"],
+  tag: ReturnType<F>["tag"],
+): F & BindingDeclaration<ReturnType<F>["runtime"], F> => {
+  type Runtime = ReturnType<F>["runtime"];
+  type Tag = ReturnType<F>["tag"];
+  type Resource = new () => ReturnType<F>["capability"]["resource"];
+
+  const handler = (() => {
+    throw new Error(`Should never be called`);
+  }) as unknown as F;
+
+  return Object.assign(handler, {
+    layer: {
+      effect: () => {
+        throw new Error(`Not implemented`);
       },
-    ) as Self;
+      succeed: () => {
+        throw new Error(`Not implemented`);
+      },
+    },
+  });
+};
+
+export interface BindingDeclaration<
+  Run extends Runtime,
+  F extends (target: any, props?: any) => Binding<Run, any>,
+  Tag = ReturnType<F>["tag"],
+> {
+  layer: {
+    effect<Err, Req>(
+      eff: Effect<
+        BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
+        Err,
+        Req
+      >,
+    ): Layer<Tag, Err, Req>;
+    succeed(
+      service: BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
+    ): Layer<BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>>;
+  };
+}
+
+// <Self>(): Self =>
+//   Object.assign(
+//     Context.Tag(
+//       `${capability.action}(${tag}, ${runtime})` as `${Cap["action"]}(${Tag}, ${Runtime})`,
+//     )<Self, BindingService<Cap["resource"], Props>>(),
+//     {
+//       Kind: "Binding",
+//       Capability: capability,
+//     },
+//   ) as Self;
 
 export type BindingService<
   Target = any,

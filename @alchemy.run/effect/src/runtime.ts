@@ -1,9 +1,7 @@
 import type { Types } from "effect";
 import * as Context from "effect/Context";
 import type { Effect } from "effect/Effect";
-import type { Layer } from "effect/Layer";
 import { bind, type Bind } from "./bind.ts";
-import type { Binding, BindingService } from "./binding.ts";
 import type { Capability } from "./capability.ts";
 import type { Policy } from "./policy.ts";
 
@@ -36,8 +34,8 @@ export declare namespace Runtime {
 
 export type AnyRuntime = Runtime<string>;
 
-export interface RuntimeProps<Runtime, Req> {
-  bindings: Policy<Runtime.Binding<Runtime, Extract<Req, Capability>>>;
+export interface RuntimeProps<Run extends Runtime, Req> {
+  bindings: Policy<Run, Extract<Req, Capability>>;
 }
 
 export interface Runtime<
@@ -48,6 +46,7 @@ export interface Runtime<
   type: Type;
   props: Props;
   handler: Handler;
+  /** @internal phantom */
   cap: Handler extends unknown
     ? unknown
     : Extract<
@@ -62,32 +61,6 @@ export interface Runtime<
   ): <const Props extends this["props"] & RuntimeProps<this, Req>>(
     props: Props,
   ) => Bind<this, ID, (...args: Inputs) => Effect<Output, Err, Req>, Props>;
-  binding<F extends (target: any, props?: any) => Binding<this, any>>(
-    type: ReturnType<F>["capability"]["type"],
-    resource: new () => ReturnType<F>["capability"]["resource"],
-  ): F & BindingLayers<this, F>;
-}
-
-export interface BindingLayers<
-  Run extends Runtime,
-  F extends (target: any, props?: any) => any,
-> {
-  layer: {
-    effect<Err, Req>(
-      eff: Effect<
-        BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
-        Err,
-        Req
-      >,
-    ): Layer<
-      BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
-      Err,
-      Req
-    >;
-    succeed(
-      service: BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
-    ): Layer<BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>>;
-  };
 }
 
 export const Runtime =

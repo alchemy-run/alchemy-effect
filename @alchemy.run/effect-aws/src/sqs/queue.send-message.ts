@@ -1,7 +1,12 @@
 import * as Effect from "effect/Effect";
 
-import { Policy, type Capability, type Declared } from "@alchemy.run/effect";
-import { Function, type FunctionBinding } from "../lambda/index.ts";
+import {
+  Binding,
+  Policy,
+  type Capability,
+  type Declared,
+} from "@alchemy.run/effect";
+import { Function } from "../lambda/index.ts";
 import { QueueClient } from "./queue.client.ts";
 import { Queue } from "./queue.ts";
 
@@ -22,9 +27,16 @@ export const sendMessage = <Q extends Queue>(
     });
   });
 
-export const SendMessage = Function.binding<
-  <Q extends Queue>(queue: Declared<Q>) => FunctionBinding<SendMessage<Q>>
->("AWS.SQS.SendMessage", Queue);
+// provide a custom tag to uniquely identify your binding implementation of Function<SendMessage<Q>>
+export const SendMessage2 = Binding<
+  <Q extends Queue>(
+    queue: Declared<Q>,
+  ) => Binding<Function, SendMessage<Q>, "Hyperdrive">
+>(Function, Queue, "Hyperdrive");
+
+export const SendMessage = Binding<
+  <Q extends Queue>(queue: Declared<Q>) => Binding<Function, SendMessage<Q>>
+>(Function, Queue, "AWS.SQS.SendMessage");
 
 export const sendMessageFromLambdaFunction = () =>
   SendMessage.layer.succeed({

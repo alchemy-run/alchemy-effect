@@ -1,4 +1,3 @@
-import { $ } from "@alchemy.run/effect";
 import type {
   Context as LambdaContext,
   LambdaFunctionURLEvent,
@@ -19,10 +18,5 @@ export const serve =
       ) => Effect.Effect<LambdaFunctionURLResult, never, Req>;
     },
   ) =>
-  <const Props extends Lambda.FunctionProps<Req>>(props: Props) => {
-    const f = Lambda.Function(id, fetch);
-    return f({
-      main: "",
-      bindings: $(),
-    });
-  };
+  <const Props extends Lambda.FunctionProps<Req>>(props: Props) =>
+    Lambda.Function(id, { handle: fetch })(props);

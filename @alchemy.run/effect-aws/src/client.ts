@@ -1,4 +1,3 @@
-import type { TagInstance } from "@alchemy.run/effect";
 import type * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -6,6 +5,8 @@ import * as Redacted from "effect/Redacted";
 import type { AWSClientConfig } from "itty-aws";
 import { Credentials } from "./credentials.ts";
 import { Region } from "./region.ts";
+
+export type TagInstance<T> = T extends new (_: never) => infer R ? R : never;
 
 export const createAWSServiceClientLayer =
   <Tag extends Context.Tag<any, any>, Client>(
