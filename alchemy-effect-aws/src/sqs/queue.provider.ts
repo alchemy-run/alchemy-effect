@@ -1,16 +1,14 @@
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
 
-import { App, Provider, type ProviderService } from "@alchemy.run/effect";
+import { App, type ProviderService } from "@alchemy.run/effect";
 import { AccountID } from "../account.ts";
 import { Region } from "../region.ts";
 import { QueueClient } from "./queue.client.ts";
 import { Queue, type QueueProps } from "./queue.ts";
 
 export const queueProvider = () =>
-  Layer.effect(
-    Provider(Queue),
+  Queue.provider.effect(
     Effect.gen(function* () {
       const sqs = yield* QueueClient;
       const app = yield* App;

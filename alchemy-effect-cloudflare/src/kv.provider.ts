@@ -1,12 +1,10 @@
-import { App, Provider } from "@alchemy.run/effect";
+import { App } from "@alchemy.run/effect";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 import { CloudflareAccountId, CloudflareApi } from "./api.ts";
-import { KV, type KVProps } from "./kv.ts";
+import { KV as KVNamespace, type KVProps } from "./kv.ts";
 
 export const kvProvider = () =>
-  Layer.effect(
-    Provider(KV),
+  KVNamespace.provider.effect(
     Effect.gen(function* () {
       const app = yield* App;
       const api = yield* CloudflareApi;
@@ -15,7 +13,7 @@ export const kvProvider = () =>
       const createTitle = (id: string, news: KVProps) =>
         news.title ?? `${app.name}-${id}-${app.stage}`;
 
-      return Provider(KV).of({
+      return {
         create: Effect.fn(function* ({ id, news }) {
           const result = yield* Effect.promise(() =>
             api.kv.namespaces.create({
@@ -48,6 +46,6 @@ export const kvProvider = () =>
             }),
           );
         }),
-      });
+      };
     }),
   );

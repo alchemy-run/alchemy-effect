@@ -1,3 +1,7 @@
+import type { Effect } from "effect/Effect";
+import type { Layer } from "effect/Layer";
+import type { Provider, ProviderService } from "./provider.ts";
+
 export interface IResource<
   Type extends string = string,
   ID extends string = string,
@@ -42,5 +46,13 @@ export const Resource = <Ctor extends (id: string, props: any) => Resource>(
     type: ReturnType<Ctor>["type"];
     new (): ReturnType<Ctor> & {
       parent: ReturnType<Ctor>;
+    };
+    provider: {
+      effect<Err, Req>(
+        eff: Effect<ProviderService<ReturnType<Ctor>>, Err, Req>,
+      ): Layer<Provider<ReturnType<Ctor>>, Err, Req>;
+      succeed(
+        service: ProviderService<ReturnType<Ctor>>,
+      ): Layer<Provider<ReturnType<Ctor>>>;
     };
   };

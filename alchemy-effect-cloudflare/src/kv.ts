@@ -9,9 +9,12 @@ export type KVAttr<Props extends KVProps> = {
   namespaceId: string;
 };
 
-export interface KV extends Resource<"Cloudflare.KV"> {
-  props: KVProps;
-  attr: KVAttr<this["props"]>;
-}
+export interface KV<ID extends string, Props extends KVProps>
+  extends Resource<"Cloudflare.KVNamespace", ID, Props, KVAttr<Props>> {}
 
-export const KV = Resource<KV>("Cloudflare.KV");
+export const KV = Resource<{
+  <const ID extends string, const Props extends KVProps>(
+    id: ID,
+    props: Props,
+  ): KV<ID, Props>;
+}>("Cloudflare.KVNamespace");
