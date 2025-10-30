@@ -2,18 +2,16 @@ import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type { ScopedPlanStatusSession } from "./apply.ts";
 import type { BindNode } from "./plan.ts";
-import type { Resource, ResourceClass } from "./resource.ts";
-import type { AnyRuntime } from "./runtime.ts";
+import type { Instance } from "./policy.ts";
+import type { Resource } from "./resource.ts";
 
 export type Provider<R extends Resource> = Context.TagClass<
   Provider<R>,
   R["type"],
   ProviderService<R>
 >;
-export const Provider = <R extends ResourceClass | AnyRuntime | Resource>(
-  R: R,
-) => {
-  return Context.Tag(R.type)() as Provider<Resource.Instance<R>>;
+export const Provider = <R extends Resource>(R: R) => {
+  return Context.Tag(R.type)() as Provider<Instance<R>>;
 };
 
 export type Diff =

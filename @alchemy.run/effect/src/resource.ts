@@ -1,16 +1,21 @@
-type IResource<Type extends string, ID extends string, Props, Attrs> = {
+export interface IResource<
+  Type extends string = string,
+  ID extends string = string,
+  Props = any,
+  Attrs = any,
+> {
   id: ID;
   type: Type;
   props: Props;
   attr: Attrs;
-};
+  parent: unknown;
+}
 export interface Resource<
   Type extends string = string,
   ID extends string = string,
   Props = unknown,
   Attrs = unknown,
 > extends IResource<Type, ID, Props, Attrs> {
-  parent: unknown;
   // oxlint-disable-next-line no-misused-new
   new (): Resource<Type, ID, Props, Attrs>;
 }

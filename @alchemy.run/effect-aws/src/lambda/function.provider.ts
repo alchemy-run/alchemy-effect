@@ -3,13 +3,11 @@ import path from "node:path";
 
 import { FileSystem } from "@effect/platform";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
 
 import {
   App,
   DotAlchemy,
-  Provider,
   type BindingService,
   type BindNode,
   type ProviderService,
@@ -27,8 +25,7 @@ import { FunctionClient } from "./function.client.ts";
 import { Function, type FunctionAttr, type FunctionProps } from "./function.ts";
 
 export const functionProvider = () =>
-  Layer.effect(
-    Provider(Function),
+  Function.provider.effect(
     Effect.gen(function* () {
       const lambda = yield* FunctionClient;
       const iam = yield* IAM.IAMClient;

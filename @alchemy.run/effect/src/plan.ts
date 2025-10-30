@@ -5,8 +5,8 @@ import type { AnyBinding, SerializedBinding } from "./binding.ts";
 import type { Capability } from "./capability.ts";
 import type { Instance } from "./policy.ts";
 import { Provider, type ProviderService } from "./provider.ts";
-import type { Resource } from "./resource.ts";
-import type { Service } from "./service.ts";
+import type { IResource, Resource } from "./resource.ts";
+import { isService, type Service } from "./service.ts";
 import { State, type ResourceState } from "./state.ts";
 
 export type PlanError = never;
@@ -33,19 +33,16 @@ export type Attach<B extends AnyBinding = AnyBinding> = {
   action: "attach";
   binding: B;
   olds?: SerializedBinding<B>;
-  attributes: Capability.Attr<Cap>;
 };
 
 export type Detach<B extends AnyBinding = AnyBinding> = {
   action: "detach";
   binding: B;
-  attributes: Capability.Attr<Cap>;
 };
 
 export type NoopBind<B extends AnyBinding = AnyBinding> = {
   action: "noop";
   binding: B;
-  attributes: Capability.Attr<Cap>;
 };
 
 export const isCRUD = (node: any): node is CRUD => {
@@ -62,14 +59,14 @@ export const isCRUD = (node: any): node is CRUD => {
 /**
  * A node in the plan that represents a resource CRUD operation.
  */
-export type CRUD<R extends Resource = Resource> =
+export type CRUD<R extends IResource = IResource> =
   | Create<R>
   | Update<R>
   | Delete<R>
   | Replace<R>
   | NoopUpdate<R>;
 
-export type Apply<R extends Resource> =
+export type Apply<R extends IResource> =
   | Create<R>
   | Update<R>
   | Replace<R>
@@ -89,7 +86,7 @@ const BaseNode = {
   },
 };
 
-export type Create<R extends Resource> = {
+export type Create<R extends IResource> = {
   action: "create";
   resource: R;
   news: any;
@@ -98,7 +95,7 @@ export type Create<R extends Resource> = {
   bindings: BindNode[];
 };
 
-export type Update<R extends Resource> = {
+export type Update<R extends IResource> = {
   action: "update";
   resource: R;
   olds: any;
@@ -109,7 +106,7 @@ export type Update<R extends Resource> = {
   bindings: BindNode[];
 };
 
-export type Delete<R extends Resource> = {
+export type Delete<R extends IResource> = {
   action: "delete";
   resource: R;
   olds: any;
@@ -120,14 +117,14 @@ export type Delete<R extends Resource> = {
   downstream: string[];
 };
 
-export type NoopUpdate<R extends Resource> = {
+export type NoopUpdate<R extends IResource> = {
   action: "noop";
   resource: R;
   attributes: R["attr"];
   bindings: BindNode[];
 };
 
-export type Replace<R extends Resource> = {
+export type Replace<R extends IResource> = {
   action: "replace";
   resource: R;
   olds: any;
@@ -202,124 +199,128 @@ export const plan = <
         {} as Record<string, string[]>,
       );
 
-    const updates = (
+    const graph = services
+      .flatMap(
+        (service) =>
+          [
+            ...service.props.bindings.capabilities.map((cap: Capability) => [
+              (cap.resource as IResource).id,
+              cap.resource,
+            ]),
+            [[service.id, service]],
+          ] as [string, Resource][],
+      )
+      .reduce(
+        (acc, [id, resource]) => ({ ...acc, [id]: resource }),
+        {} as Record<string, IResource>,
+      );
+
+    const updates =
       phase === "update"
-        ? yield* Effect.all(
-            services.map((resource) =>
-              Effect.flatMap(
-                resource,
-                Effect.fn(function* (subgraph: {
-                  [x: string]: Resource | Bound;
-                }) {
-                  return Object.fromEntries(
-                    (yield* Effect.all(
-                      Object.entries(subgraph).map(
-                        Effect.fn(function* ([id, node]) {
-                          const resource = isBound(node) ? node.runtime : node;
-                          const news = isBound(node)
-                            ? node.runtime.input
-                            : resource.input;
+        ? (Object.fromEntries(
+            (yield* Effect.all(
+              Object.entries(graph).map(
+                Effect.fn(function* ([id, node]) {
+                  const resource = isService(node) ? node.runtime : node;
+                  const news = isService(node)
+                    ? node.runtime.props
+                    : resource.props;
 
-                          const oldState = yield* state.get(id);
-                          const provider: ProviderService = yield* Provider(
-                            resource.parent as Resource,
-                          );
-                          const capabilities = diffCapabilities(
-                            oldState,
-                            isBound(node) ? node.runtime.capability : [],
-                          );
+                  const oldState = yield* state.get(id);
+                  const provider: ProviderService = yield* Provider(
+                    resource.parent as Resource,
+                  );
+                  const capabilities = diffCapabilities(
+                    oldState,
+                    isService(node) ? node.runtime.capability : [],
+                  );
 
-                          if (
-                            oldState === undefined ||
-                            oldState.status === "creating"
-                          ) {
-                            return {
-                              ...BaseNode,
-                              action: "create",
-                              news,
-                              provider,
-                              resource,
-                              bindings: capabilities,
-                              // phantom
-                              attributes: undefined!,
-                            } satisfies Create<Resource>;
-                          } else if (provider.diff) {
-                            const diff = yield* provider.diff({
-                              id,
-                              olds: oldState.props,
-                              news,
-                              output: oldState.output,
-                              bindings: capabilities,
-                            });
-                            if (diff.action === "noop") {
-                              return {
-                                ...BaseNode,
-                                action: "noop",
-                                resource,
-                                capabilities,
-                                // phantom
-                                attributes: undefined!,
-                              };
-                            } else if (diff.action === "replace") {
-                              return {
-                                ...BaseNode,
-                                action: "replace",
-                                olds: oldState.props,
-                                news,
-                                output: oldState.output,
-                                provider,
-                                resource,
-                                capabilities,
-                                // phantom
-                                attributes: undefined!,
-                              };
-                            } else {
-                              return {
-                                ...BaseNode,
-                                action: "update",
-                                olds: oldState.props,
-                                news,
-                                output: oldState.output,
-                                provider,
-                                resource,
-                                capabilities,
-                                // phantom
-                                attributes: undefined!,
-                              };
-                            }
-                          } else if (compare(oldState, resource.input)) {
-                            return {
-                              ...BaseNode,
-                              action: "update",
-                              olds: oldState.props,
-                              news,
-                              output: oldState.output,
-                              provider,
-                              resource,
-                              capabilities,
-                              // phantom
-                              attributes: undefined!,
-                            };
-                          } else {
-                            return {
-                              ...BaseNode,
-                              action: "noop",
-                              resource,
-                              capabilities,
-                              // phantom
-                              attributes: undefined!,
-                            };
-                          }
-                        }),
-                      ),
-                    )).map((update) => [update.resource.id, update]),
-                  ) as Plan;
+                  if (
+                    oldState === undefined ||
+                    oldState.status === "creating"
+                  ) {
+                    return {
+                      ...BaseNode,
+                      action: "create",
+                      news,
+                      provider,
+                      resource,
+                      bindings: capabilities,
+                      // phantom
+                      attributes: undefined!,
+                    } satisfies Create<Resource>;
+                  } else if (provider.diff) {
+                    const diff = yield* provider.diff({
+                      id,
+                      olds: oldState.props,
+                      news,
+                      output: oldState.output,
+                      bindings: capabilities,
+                    });
+                    if (diff.action === "noop") {
+                      return {
+                        ...BaseNode,
+                        action: "noop",
+                        resource,
+                        capabilities,
+                        // phantom
+                        attributes: undefined!,
+                      };
+                    } else if (diff.action === "replace") {
+                      return {
+                        ...BaseNode,
+                        action: "replace",
+                        olds: oldState.props,
+                        news,
+                        output: oldState.output,
+                        provider,
+                        resource,
+                        capabilities,
+                        // phantom
+                        attributes: undefined!,
+                      };
+                    } else {
+                      return {
+                        ...BaseNode,
+                        action: "update",
+                        olds: oldState.props,
+                        news,
+                        output: oldState.output,
+                        provider,
+                        resource,
+                        capabilities,
+                        // phantom
+                        attributes: undefined!,
+                      };
+                    }
+                  } else if (compare(oldState, resource.input)) {
+                    return {
+                      ...BaseNode,
+                      action: "update",
+                      olds: oldState.props,
+                      news,
+                      output: oldState.output,
+                      provider,
+                      resource,
+                      capabilities,
+                      // phantom
+                      attributes: undefined!,
+                    };
+                  } else {
+                    return {
+                      ...BaseNode,
+                      action: "noop",
+                      resource,
+                      capabilities,
+                      // phantom
+                      attributes: undefined!,
+                    };
+                  }
                 }),
               ),
-            ),
-          )
-        : []
-    ).reduce((acc, update: any) => ({ ...acc, ...update }), {} as Plan);
+            )).map((update) => [update.resource.id, update]),
+          ) as Plan)
+        : ({} as Plan);
 
     const deletions = Object.fromEntries(
       (yield* Effect.all(
@@ -348,13 +349,12 @@ export const plan = <
                   // TODO(sam): Support Detach Bindings
                   bindings: [],
                   resource: {
-                    kind: "Resource",
                     id: id,
                     parent: undefined,
                     type: oldState.type,
                     attr: oldState.output,
-                    input: oldState.props,
-                  },
+                    props: oldState.props,
+                  } satisfies IResource,
                   downstream: downstream[id] ?? [],
                 } satisfies Delete<Resource>,
               ] as const;

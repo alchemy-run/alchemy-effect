@@ -33,9 +33,9 @@ export const sendMessage = <Q extends Queue>(
   });
 
 export const sendMessageFromLambdaFunction = () =>
-  SendMessage.layer.succeed({
+  SendMessage.provider.succeed({
     // oxlint-disable-next-line require-yield
-    attach: Effect.fn(function* (queue, _props, _target) {
+    attach: Effect.fn(function* (queue) {
       return {
         env: {
           // ask what attribute is needed to interact? e.g. is it the Queue ARN or the Queue URL?
@@ -44,7 +44,7 @@ export const sendMessageFromLambdaFunction = () =>
         },
         policyStatements: [
           {
-            Sid: capability.sid,
+            Sid: "AWS.SQS.SendMessage",
             Effect: "Allow",
             Action: ["sqs:SendMessage"], // <- ask LLM how to generate this
             Resource: [queue.attr.queueArn],

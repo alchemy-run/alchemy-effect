@@ -9,11 +9,9 @@ export type SerializedBinding<B extends AnyBinding = AnyBinding> = Omit<
   B,
   "resource"
 > & {
-  capability: {
-    resource: {
-      type: string;
-      id: string;
-    };
+  resource: {
+    type: string;
+    id: string;
   };
 };
 
@@ -75,22 +73,22 @@ export const Binding: {
     resource: new () => ReturnType<F>["capability"]["resource"],
     type: ReturnType<F>["capability"]["type"],
   ): F & BindingDeclaration<ReturnType<F>["runtime"], F>;
-} = (runtime: any, resource: any, type: string, tag?: string) => {
-  const handler = () => {
-    throw new Error(`Should never be called`);
-  };
-
-  return Object.assign(handler, {
-    layer: {
-      effect: () => {
-        throw new Error(`Not implemented`);
-      },
-      succeed: () => {
-        throw new Error(`Not implemented`);
-      },
+} = (runtime: any, resource: any, type: string, tag?: string) =>
+  Object.assign(
+    () => {
+      throw new Error(`Should never be called`);
     },
-  });
-};
+    {
+      provider: {
+        effect: () => {
+          throw new Error(`Not implemented`);
+        },
+        succeed: () => {
+          throw new Error(`Not implemented`);
+        },
+      },
+    } satisfies BindingDeclaration<Runtime, any>,
+  );
 
 export interface BindingDeclaration<
   Run extends Runtime,
@@ -98,23 +96,23 @@ export interface BindingDeclaration<
   Tag extends string = ReturnType<F>["tag"],
   Cap extends Capability = ReturnType<F>["capability"],
 > {
-  layer: {
+  provider: {
     effect<Err, Req>(
       eff: Effect<
-        BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
+        BindingService<Run, Parameters<F>[0], Parameters<F>[1]>,
         Err,
         Req
       >,
     ): Layer<Bind<Run, Cap, Tag>, Err, Req>;
     succeed(
-      service: BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
+      service: BindingService<Run, Parameters<F>[0], Parameters<F>[1]>,
     ): Layer<Bind<Run, Cap, Tag>>;
   };
 }
 
 export type BindingService<
-  Target = any,
-  R extends Resource = Resource,
+  Target extends Runtime = any,
+  Source extends Resource = Resource,
   Props = any,
   AttachReq = never,
   DetachReq = never,
@@ -122,18 +120,25 @@ export type BindingService<
   attach: (
     resource: {
       id: string;
-      attr: R["attr"];
-      props: R["props"];
+      attr: Source["attr"];
+      props: Source["props"];
     },
-    to: Props,
-    target: Target,
-  ) => Effect<Partial<Props> | void, never, AttachReq>;
+    props: Props,
+    target: {
+      props: Target["props"];
+      attr: Target["attr"];
+      binding: Target["binding"];
+    },
+  ) =>
+    | Effect<Partial<Target["binding"]> | void, never, AttachReq>
+    | Partial<Target["binding"]>
+    | void;
   detach?: (
     resource: {
       id: string;
-      attr: R["attr"];
-      props: R["props"];
+      attr: Source["attr"];
+      props: Source["props"];
     },
-    from: Props,
-  ) => Effect<void, never, DetachReq>;
+    from: Target["binding"],
+  ) => Effect<void, never, DetachReq> | void;
 };

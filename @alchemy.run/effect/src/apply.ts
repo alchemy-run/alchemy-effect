@@ -3,7 +3,8 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import type { Simplify } from "effect/Types";
 import { PlanReviewer, type PlanRejected } from "./approve.ts";
-import type { Capability, SerializedCapability } from "./capability.ts";
+import type { SerializedBinding } from "./binding.ts";
+import type { Capability } from "./capability.ts";
 import type { ApplyEvent, ApplyStatus } from "./event.ts";
 import {
   isBindNode,
@@ -56,15 +57,15 @@ export const apply = <const P extends Plan, Err, Req>(
         const { emit, done } = session;
 
         const apply: (
-          node: (BindNode | SerializedCapability)[] | CRUD,
+          node: (BindNode | SerializedBinding)[] | CRUD,
         ) => Effect.Effect<any, never, never> = (node) =>
           Effect.gen(function* () {
             if (Array.isArray(node)) {
               return yield* Effect.all(
-                node.map((binding) => {
-                  const resourceId = isBindNode(binding)
-                    ? binding.capability.resource.id
-                    : binding.resource.id;
+                node.map((node) => {
+                  const resourceId = isBindNode(node)
+                    ? node.binding.capability.resource.id
+                    : node.resource.id;
                   const resource = plan[resourceId];
                   return !resource
                     ? Effect.dieMessage(`Resource ${resourceId} not found`)
@@ -83,13 +84,13 @@ export const apply = <const P extends Plan, Err, Req>(
                       id: node.resource.id,
                       type: node.resource.type,
                       status: node.action === "create" ? "created" : "updated",
-                      props: node.resource.input,
+                      props: node.resource.props,
                       output,
                       bindings: node.bindings.map((binding) => ({
                         ...binding,
                         resource: {
-                          type: binding.capability.resource.type,
-                          id: binding.capability.resource.id,
+                          type: binding.binding.capability.resource.type,
+                          id: binding.binding.capability.resource.id,
                         },
                       })),
                     })

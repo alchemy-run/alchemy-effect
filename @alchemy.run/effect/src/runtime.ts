@@ -1,9 +1,12 @@
 import type { Types } from "effect";
 import * as Context from "effect/Context";
 import type { Effect } from "effect/Effect";
+import type { Layer } from "effect/Layer";
 import type { Capability } from "./capability.ts";
 import type { Policy } from "./policy.ts";
-import type { Service } from "./service.ts";
+import type { ProviderService } from "./provider.ts";
+import type { Resource } from "./resource.ts";
+import type { IService, Service } from "./service.ts";
 
 export type RuntimeHandler<
   Inputs extends any[] = any[],
@@ -42,15 +45,13 @@ export interface Runtime<
   Type extends string = string,
   Handler = unknown,
   Props = unknown,
-> {
-  attr: unknown;
-
+> extends Resource<Type, string, Props, unknown> {
   type: Type;
   props: Props;
   handler: Handler;
+  binding: unknown;
   /** @internal phantom */
-  cap: unknown;
-  capability: Extract<this["cap"], Capability>;
+  capability: unknown;
   new (): {};
   <
     const ID extends string,
@@ -69,7 +70,14 @@ export interface Runtime<
 
 export const Runtime =
   <const Type extends string>(type: Type) =>
-  <Self extends Runtime>() => {
+  <Self extends Runtime>(): Self & {
+    provider: {
+      effect<Err, Req>(
+        eff: Effect<ProviderService<Self>, Err, Req>,
+      ): Layer<Self, Err, Req>;
+      succeed(service: ProviderService<Self>): Layer<Self>;
+    };
+  } => {
     const self = Object.assign(
       (
         ...args:
@@ -95,18 +103,16 @@ export const Runtime =
                 }
               },
               {
+                kind: "Service",
+                type,
                 id,
                 attr: undefined!,
                 handler: handle,
                 props,
                 runtime: self,
-                type: type,
                 // TODO(sam): is this right?
                 parent: self,
-              } satisfies Omit<
-                Service<string, Self, any, any>,
-                keyof { new (): {} }
-              >,
+              } satisfies IService<string, Self, any, any>,
             );
         }
       },

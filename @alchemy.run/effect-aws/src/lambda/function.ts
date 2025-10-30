@@ -1,4 +1,5 @@
-import { Capability, Policy, Runtime } from "@alchemy.run/effect";
+import { Policy, Runtime, type Capability } from "@alchemy.run/effect";
+import type * as IAM from "../iam.ts";
 
 export type { Context } from "aws-lambda";
 
@@ -24,6 +25,13 @@ export type FunctionAttr<Props extends FunctionProps = FunctionProps> = {
 };
 
 export interface Function extends Runtime<"AWS.Lambda.Function"> {
-  readonly attr: FunctionAttr<Extract<this["props"], FunctionProps>>;
+  binding: {
+    env: {
+      [key: string]: string;
+    };
+    policyStatements: IAM.PolicyStatement[];
+  };
+  props: FunctionProps;
+  attr: FunctionAttr<Extract<this["props"], FunctionProps>>;
 }
 export const Function = Runtime("AWS.Lambda.Function")<Function>();
