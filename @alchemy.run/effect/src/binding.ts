@@ -5,24 +5,46 @@ import type { Capability } from "./capability.ts";
 import type { Resource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
 
+export type SerializedBinding<B extends AnyBinding = AnyBinding> = Omit<
+  B,
+  "resource"
+> & {
+  capability: {
+    resource: {
+      type: string;
+      id: string;
+    };
+  };
+};
+
 export interface BindingProps {
   [key: string]: any;
 }
 
-export const isBinding = (b: any): b is Binding<any, any, any> =>
+export const isBinding = (b: any): b is AnyBinding =>
   "runtime" in b && "capability" in b && "tag" in b && "output" in b;
 
-export type AnyBinding<F extends Runtime = any> = Binding<F, any, any>;
+export type AnyBinding<F extends Runtime = any> = Binding<
+  F,
+  any,
+  any,
+  string,
+  boolean
+>;
 
-export type Binding<
+export interface Binding<
   Run extends Runtime,
   Cap extends Capability = Capability,
+  Props = any,
   Tag extends string = Cap["type"],
-> = {
+  IsCustomTag extends boolean = Cap["type"] extends Tag ? false : true,
+> {
   runtime: Run;
   capability: Cap;
-  tag: Bind<Run, Cap, Tag>;
-};
+  tag: Tag;
+  props: Props;
+  isCustomTag: IsCustomTag;
+}
 
 /** Tag for a Service that can bind a Capability to a Runtime */
 export interface Bind<
@@ -41,19 +63,32 @@ export interface Bind<
   name: Tag;
 }
 
-export const Binding = <F extends (resource: any, props?: any) => AnyBinding>(
-  runtime: ReturnType<F>["runtime"],
-  resource: new () => ReturnType<F>["capability"]["resource"],
-  tag: ReturnType<F>["tag"]["name"],
-  // _tag: ReturnType<F>,
-): F & BindingDeclaration<ReturnType<F>["runtime"], F> => {
-  type Runtime = ReturnType<F>["runtime"];
-  type Tag = ReturnType<F>["tag"];
-  type Resource = new () => ReturnType<F>["capability"]["resource"];
-
-  const handler = (() => {
+export const Binding: {
+  <
+    F extends (
+      resource: any,
+      props?: any,
+    ) => AnyBinding & { isCustomTag: true },
+  >(
+    runtime: ReturnType<F>["runtime"],
+    resource: new () => ReturnType<F>["capability"]["resource"],
+    type: ReturnType<F>["capability"]["type"],
+    tag: ReturnType<F>["tag"],
+  ): F & BindingDeclaration<ReturnType<F>["runtime"], F>;
+  <
+    F extends (
+      resource: any,
+      props?: any,
+    ) => AnyBinding & { isCustomTag: false },
+  >(
+    runtime: ReturnType<F>["runtime"],
+    resource: new () => ReturnType<F>["capability"]["resource"],
+    type: ReturnType<F>["capability"]["type"],
+  ): F & BindingDeclaration<ReturnType<F>["runtime"], F>;
+} = (runtime: any, resource: any, type: string, tag?: string) => {
+  const handler = () => {
     throw new Error(`Should never be called`);
-  }) as unknown as F;
+  };
 
   return Object.assign(handler, {
     layer: {
@@ -69,8 +104,9 @@ export const Binding = <F extends (resource: any, props?: any) => AnyBinding>(
 
 export interface BindingDeclaration<
   Run extends Runtime,
-  F extends (target: any, props?: any) => Binding<Run, any>,
-  Tag = ReturnType<F>["tag"],
+  F extends (target: any, props?: any) => AnyBinding<Run>,
+  Tag extends string = ReturnType<F>["tag"],
+  Cap extends Capability = ReturnType<F>["capability"],
 > {
   layer: {
     effect<Err, Req>(
@@ -79,10 +115,10 @@ export interface BindingDeclaration<
         Err,
         Req
       >,
-    ): Layer<Tag, Err, Req>;
+    ): Layer<Bind<Run, Cap, Tag>, Err, Req>;
     succeed(
       service: BindingService<Run["props"], Parameters<F>[0], Parameters<F>[1]>,
-    ): Layer<Tag>;
+    ): Layer<Bind<Run, Cap, Tag>>;
   };
 }
 

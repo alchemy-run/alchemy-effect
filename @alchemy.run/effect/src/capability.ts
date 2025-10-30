@@ -1,13 +1,3 @@
-export type SerializedCapability<B extends Capability = Capability> = Omit<
-  B,
-  "resource"
-> & {
-  resource: {
-    type: string;
-    id: string;
-  };
-};
-
 export interface Capability<
   Type extends string = string,
   Resource = unknown,

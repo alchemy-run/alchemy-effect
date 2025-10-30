@@ -64,9 +64,7 @@ export interface Runtime<
     { handle }: { handle: Handler },
   ): <const Props extends this["props"]>(
     props: Props,
-  ) => Service<ID, this, Handler, Extract<Props, RuntimeProps<this, any>>> & {
-    new (): {};
-  };
+  ) => Service<ID, this, Handler, Extract<Props, RuntimeProps<this, any>>>;
 }
 
 export const Runtime =
@@ -102,7 +100,13 @@ export const Runtime =
                 handler: handle,
                 props,
                 runtime: self,
-              } satisfies Service<string, Self, any, any>,
+                type: type,
+                // TODO(sam): is this right?
+                parent: self,
+              } satisfies Omit<
+                Service<string, Self, any, any>,
+                keyof { new (): {} }
+              >,
             );
         }
       },

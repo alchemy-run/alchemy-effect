@@ -1,5 +1,6 @@
+import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
-import { type AnyBinding } from "./binding.ts";
+import { type AnyBinding, type Bind } from "./binding.ts";
 import type { Capability } from "./capability.ts";
 import type { Runtime } from "./runtime.ts";
 
@@ -29,15 +30,25 @@ export interface Policy<
 export type $ = typeof $;
 export const $ = Policy;
 
+type BindingTags<B extends AnyBinding> = B extends any
+  ? Bind<B["runtime"], B["capability"], Extract<B["tag"], string>>
+  : never;
+
 export function Policy<F extends Runtime>(): Policy<F, never, never>;
 export function Policy<B extends AnyBinding[]>(
   ...capabilities: B
-): Policy<B[number]["runtime"], B[number]["capability"], B[number]["tag"]>;
-export function Policy(...bindings: AnyBinding[]) {
+): Policy<
+  B[number]["runtime"],
+  B[number]["capability"],
+  BindingTags<B[number]>
+>;
+export function Policy(...bindings: AnyBinding[]): any {
   return {
     runtime: bindings[0]["runtime"],
     capabilities: bindings.map((b) => b.capability),
-    tags: bindings.map((b) => b.tag),
+    tags: bindings.map(
+      (b) => class Tag extends Context.Tag(b.tag as any)<Tag, any>() {},
+    ),
     and: (...b2: AnyBinding[]) => Policy(...bindings, ...b2),
   };
 }

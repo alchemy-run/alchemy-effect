@@ -1,7 +1,8 @@
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import util from "node:util";
-import type { Capability, SerializedCapability } from "./capability.ts";
+import type { AnyBinding, SerializedBinding } from "./binding.ts";
+import type { Capability } from "./capability.ts";
 import type { Instance } from "./policy.ts";
 import { Provider, type ProviderService } from "./provider.ts";
 import type { Resource } from "./resource.ts";
@@ -23,27 +24,27 @@ export const isBindNode = (node: any): node is BindNode => {
 /**
  * A node in the plan that represents a binding operation acting on a resource.
  */
-export type BindNode<Cap extends Capability = Capability> =
-  | Attach<Cap>
-  | Detach<Cap>
-  | NoopBind<Cap>;
+export type BindNode<B extends AnyBinding = AnyBinding> =
+  | Attach<B>
+  | Detach<B>
+  | NoopBind<B>;
 
-export type Attach<Cap extends Capability = Capability> = {
+export type Attach<B extends AnyBinding = AnyBinding> = {
   action: "attach";
-  capability: Cap;
-  olds?: SerializedCapability<Cap>;
+  binding: B;
+  olds?: SerializedBinding<B>;
   attributes: Capability.Attr<Cap>;
 };
 
-export type Detach<Cap extends Capability = Capability> = {
+export type Detach<B extends AnyBinding = AnyBinding> = {
   action: "detach";
-  capability: Cap;
+  binding: B;
   attributes: Capability.Attr<Cap>;
 };
 
-export type NoopBind<Cap extends Capability = Capability> = {
+export type NoopBind<B extends AnyBinding = AnyBinding> = {
   action: "noop";
-  capability: Cap;
+  binding: B;
   attributes: Capability.Attr<Cap>;
 };
 
@@ -187,7 +188,7 @@ export const plan = <
         (
           resource,
         ): resource is ResourceState & {
-          capabilities: SerializedCapability[];
+          capabilities: SerializedBinding[];
         } => !!resource?.capabilities,
       )
       .flatMap((resource) =>
@@ -441,5 +442,5 @@ const diffCapabilities = (
   return actions;
 };
 
-const isCapabilityDiff = (oldCap: SerializedCapability, newCap: Capability) =>
+const isCapabilityDiff = (oldCap: SerializedBinding, newCap: Capability) =>
   oldCap.action !== newCap.action || oldCap.resource.id !== newCap.resource.id;
