@@ -123,7 +123,11 @@ export const Runtime =
         id: undefined! as string,
         capability: undefined! as Capability[],
         toString() {
-          return `${this.type}(${this.id}${this.capability?.length ? `, ${this.capability.map((c) => `${c}`).join(", ")}` : ""})`;
+          return `${this.type}(${this.id}${
+            this.capability?.length
+              ? `, ${this.capability.map((c) => `${c}`).join(", ")}`
+              : ""
+          })`;
         },
       },
     ) as unknown as Self;

@@ -13,10 +13,7 @@ import * as Lambda from "./function.ts";
 export const consume =
   <Q extends SQS.Queue, ID extends string, Req>(
     id: ID,
-    {
-      queue,
-      handle,
-    }: {
+    { queue, handle }: {
       queue: Q;
       handle: (
         this: unknown,

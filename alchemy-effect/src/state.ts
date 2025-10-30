@@ -138,12 +138,13 @@ export const localFs = Layer.effect(
           recover,
         ),
       set: <V extends ResourceState>(id: string, value: V) =>
-        fs
-          .writeFileString(resourceFile(id), JSON.stringify(value, null, 2))
-          .pipe(
-            recover,
-            Effect.map(() => value),
-          ),
+        fs.writeFileString(
+          resourceFile(id),
+          JSON.stringify(value, null, 2),
+        ).pipe(
+          recover,
+          Effect.map(() => value),
+        ),
       delete: (id) => fs.remove(resourceFile(id)).pipe(recover),
       list: () =>
         fs.readDirectory(stageDir).pipe(
