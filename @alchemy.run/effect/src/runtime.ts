@@ -65,7 +65,8 @@ export interface Runtime<
     { handle }: { handle: Handler },
   ): <const Props extends this["props"]>(
     props: Props,
-  ) => Service<ID, this, Handler, Extract<Props, RuntimeProps<this, any>>>;
+    // @ts-expect-error
+  ) => Service<ID, this, Handler, Props>;
 }
 
 export const Runtime =
@@ -126,5 +127,5 @@ export const Runtime =
         },
       },
     ) as unknown as Self;
-    return self;
+    return self as any;
   };
