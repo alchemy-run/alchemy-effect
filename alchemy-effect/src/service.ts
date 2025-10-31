@@ -28,7 +28,5 @@ export interface Service<
     Resource<F["type"], ID, Props, Attr> {}
 
 export const isService = (resource: any): resource is IService => {
-  return (
-    resource && typeof resource === "object" && resource.kind === "Service"
-  );
+  return resource && resource.kind === "Service";
 };

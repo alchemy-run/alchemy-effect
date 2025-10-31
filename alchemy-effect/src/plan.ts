@@ -1,6 +1,5 @@
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
-import util from "node:util";
 import type { AnyBinding } from "./binding.ts";
 import type { Capability } from "./capability.ts";
 import type { Phase } from "./phase.ts";
@@ -79,9 +78,6 @@ const Node = <T extends Apply>(node: T) => ({
     return `${this.action.charAt(0).toUpperCase()}${this.action.slice(1)}(${this.resource})`;
   },
   [Symbol.toStringTag]() {
-    return this.toString();
-  },
-  [util.inspect.custom]() {
     return this.toString();
   },
 });
@@ -226,9 +222,7 @@ export const plan = <
                 .map(
                   Effect.fn(function* (node) {
                     const id = node.id;
-                    const resource = isService(node)
-                      ? node.runtime
-                      : (node as Resource);
+                    const resource = node;
                     const news = isService(node)
                       ? node.runtime.props
                       : resource.props;

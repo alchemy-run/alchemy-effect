@@ -74,7 +74,7 @@ export const Binding: {
           resource,
           constraint: undefined!,
           sid: `${cap}${resource.id}`.replace(/[^a-zA-Z0-9]/g, ""),
-          label: `${cap}(${resource.type})`,
+          label: `${cap}(${resource.id})`,
         } satisfies ICapability,
         props,
         isCustom: false,

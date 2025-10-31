@@ -3,6 +3,7 @@ import * as AWS from "@alchemy.run/effect-aws";
 import * as AlchemyCLI from "@alchemy.run/effect-cli";
 import { FetchHttpClient } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
+import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import { Api } from "./src/index.ts";
 
@@ -16,8 +17,8 @@ const plan = Alchemy.plan({
 });
 
 const stack = await plan.pipe(
+  Effect.tap((plan) => Console.log(plan)),
   Alchemy.apply,
-  Effect.catchTag("PlanRejected", () => Effect.die("Plan rejected")),
   Effect.provide(AlchemyCLI.layer),
   Effect.provide(AWS.live),
   Effect.provide(Alchemy.State.localFs),
