@@ -13,7 +13,9 @@ export type {
 export const serve =
   <const ID extends string, Req>(
     id: ID,
-    { fetch }: {
+    {
+      fetch,
+    }: {
       fetch: (
         event: FunctionURLEvent,
         context: Lambda.Context,

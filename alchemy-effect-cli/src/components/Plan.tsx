@@ -11,9 +11,12 @@ export interface PlanProps {
 export function Plan({ plan }: PlanProps): React.JSX.Element {
   const items = useMemo(
     () =>
-      ([...Object.values(plan.resources), ...Object.values(plan.deletions)] as CRUD[]).sort((n1, n2) =>
-        n1.resource.id.localeCompare(n2.resource.id),
-      ),
+      (
+        [
+          ...Object.values(plan.resources),
+          ...Object.values(plan.deletions),
+        ] as CRUD[]
+      ).sort((n1, n2) => n1.resource.id.localeCompare(n2.resource.id)),
     [plan],
   );
 

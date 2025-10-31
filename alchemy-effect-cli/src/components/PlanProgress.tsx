@@ -23,7 +23,10 @@ export function PlanProgress(props: PlanProgressProps): React.JSX.Element {
   const [tasks, setTasks] = useState<Map<string, PlanTask>>(() => {
     // Initialize tasks from the plan with appropriate starting status
     const initialTasks = new Map<string, PlanTask>();
-    const nodes = [...Object.entries(plan.resources), ...Object.entries(plan.deletions)]
+    const nodes = [
+      ...Object.entries(plan.resources),
+      ...Object.entries(plan.deletions),
+    ];
     for (const [id, item] of nodes) {
       const planItem = item!;
       const status: Alchemy.ApplyStatus =
@@ -80,7 +83,10 @@ export function PlanProgress(props: PlanProgressProps): React.JSX.Element {
   useEffect(() => {
     setTasks(() => {
       const initialTasks = new Map<string, PlanTask>();
-      const nodes = [...Object.entries(plan.resources), ...Object.entries(plan.deletions)]
+      const nodes = [
+        ...Object.entries(plan.resources),
+        ...Object.entries(plan.deletions),
+      ];
       for (const [id, item] of nodes) {
         const planItem = item!;
         const status: Alchemy.ApplyStatus =
