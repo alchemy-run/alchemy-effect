@@ -21,8 +21,8 @@ export function Plan({ plan }: PlanProps): React.JSX.Element {
 
   if (items.length === 0) {
     return <Text color="gray">No changes planned</Text>;
-  } 
- 
+  }
+
   const counts = items.reduce((acc, item) => (acc[item.action]++, acc), {
     create: 0,
     update: 0,

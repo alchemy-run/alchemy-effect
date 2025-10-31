@@ -22,7 +22,7 @@ export type Diff =
 
 type BindingData<Res extends Resource> = [Res] extends [Runtime]
   ? Res["binding"][]
-  : undefined;
+  : any[];
 
 export interface ProviderService<Res extends Resource = Resource> {
   // tail();

@@ -1,5 +1,5 @@
 {
-  "name": "@alchemy.run/effect-example",
+  "name": "example",
   "private": true,
   "license": "Apache-2.0",
   "author": "Sam Goodwin <sam@alchemy.run>",

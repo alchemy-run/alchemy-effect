@@ -3,16 +3,9 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import type { Simplify } from "effect/Types";
 import { PlanReviewer, type PlanRejected } from "./approve.ts";
-import type { SerializedBinding } from "./binding.ts";
 import type { Capability } from "./capability.ts";
 import type { ApplyEvent, ApplyStatus } from "./event.ts";
-import {
-  isBindNode,
-  type BindNode,
-  type CRUD,
-  type Delete,
-  type Plan,
-} from "./plan.ts";
+import { type BindNode, type CRUD, type Delete, type Plan } from "./plan.ts";
 import type { Resource } from "./resource.ts";
 import { State } from "./state.ts";
 
@@ -57,15 +50,13 @@ export const apply = <P extends Plan, Err, Req>(
         const { emit, done } = session;
 
         const apply: (
-          node: (BindNode | SerializedBinding)[] | CRUD,
+          node: BindNode[] | CRUD,
         ) => Effect.Effect<any, never, never> = (node) =>
           Effect.gen(function* () {
             if (Array.isArray(node)) {
               return yield* Effect.all(
                 node.map((node) => {
-                  const resourceId = isBindNode(node)
-                    ? node.binding.capability.resource.id
-                    : node.resource.id;
+                  const resourceId = node.binding.capability.resource.id;
                   const resource = plan.resources[resourceId];
                   return !resource
                     ? Effect.dieMessage(`Resource ${resourceId} not found`)

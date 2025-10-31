@@ -80,6 +80,12 @@ export const Runtime =
     };
   } => {
     const Tag = Context.Tag(type)();
+    const provider = {
+      tag: Tag,
+      effect: (eff: Effect<ProviderService<Self>, any, any>) =>
+        Layer.effect(Tag, eff),
+      succeed: (service: ProviderService<Self>) => Layer.succeed(Tag, service),
+    };
     const self = Object.assign(
       (
         ...args:
@@ -114,6 +120,8 @@ export const Runtime =
                 runtime: self,
                 // TODO(sam): is this right?
                 parent: self,
+                // @ts-expect-error
+                provider,
               } satisfies IService<string, Self, any, any>,
             );
         }
@@ -123,12 +131,7 @@ export const Runtime =
         type: type,
         id: undefined! as string,
         capability: undefined! as Capability[],
-        provider: {
-          effect: (eff: Effect<ProviderService<Self>, any, any>) =>
-            Layer.effect(Tag, eff),
-          succeed: (service: ProviderService<Self>) =>
-            Layer.succeed(Tag, service),
-        },
+        provider,
         toString() {
           return `${this.type}(${this.id}${
             this.capability?.length

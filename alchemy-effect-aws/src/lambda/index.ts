@@ -1,10 +1,11 @@
-export * from "./consume.ts";
 export * from "./function.client.ts";
 export * from "./function.handler.ts";
 export * from "./function.invoke.ts";
 export * from "./function.provider.ts";
 export * from "./function.ts";
 export * from "./serve.ts";
+
+export * from "./consume.ts";
 
 export type * from "../account.ts";
 export type * from "../region.ts";

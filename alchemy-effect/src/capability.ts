@@ -1,4 +1,4 @@
-export interface Capability<
+export interface ICapability<
   Type extends string = string,
   Resource = unknown,
   Constraint = unknown,
@@ -7,7 +7,13 @@ export interface Capability<
   resource: Resource;
   constraint: Constraint;
   sid: string;
-  action: string;
   label: string;
+}
+
+export interface Capability<
+  Type extends string = string,
+  Resource = unknown,
+  Constraint = unknown,
+> extends ICapability<Type, Resource, Constraint> {
   new (): {};
 }

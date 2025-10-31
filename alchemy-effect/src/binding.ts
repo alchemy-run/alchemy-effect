@@ -1,7 +1,7 @@
 import * as Context from "effect/Context";
 import type { Effect } from "effect/Effect";
 import * as Layer from "effect/Layer";
-import type { Capability } from "./capability.ts";
+import type { Capability, ICapability } from "./capability.ts";
 import type { Resource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
 
@@ -66,9 +66,20 @@ export const Binding: {
 } = (runtime: any, cap: string, tag?: string) => {
   const Tag = Context.Tag(`${runtime.type}(${cap}, ${tag ?? cap})`)();
   return Object.assign(
-    () => {
-      throw new Error(`Not implemented`);
-    },
+    (resource: any, props?: any) =>
+      ({
+        runtime,
+        capability: {
+          type: cap,
+          resource,
+          constraint: undefined!,
+          sid: `${cap}${resource.id}`.replace(/[^a-zA-Z0-9]/g, ""),
+          label: `${cap}(${resource.type})`,
+        } satisfies ICapability,
+        props,
+        isCustom: false,
+        tag: tag ?? cap,
+      }) satisfies Binding<any, any, any, string, false>,
     {
       provider: {
         effect: (eff) => Layer.effect(Tag, eff),

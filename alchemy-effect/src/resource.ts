@@ -38,42 +38,52 @@ export const Resource = <Ctor extends (id: string, props: any) => Resource>(
   type: ReturnType<Ctor>["type"],
 ) => {
   const Tag = Context.Tag(type)();
-  return class Resource {
-    static readonly type = type;
-    static readonly provider = {
-      tag: Tag,
-      effect: <Err, Req>(
-        eff: Effect<ProviderService<ReturnType<Ctor>>, Err, Req>,
-      ) => Layer.effect(Tag, eff),
-      succeed: (service: ProviderService<ReturnType<Ctor>>) =>
-        Layer.succeed(Tag, service),
-    } as const;
-    constructor(id: string, props: any) {
-      if (!new.target) {
-        return class {
-          static readonly id = id;
-          static readonly type = type;
-          static readonly props = props;
 
-          readonly id = id;
-          readonly type = type;
-          readonly props = props;
+  return Object.assign(
+    function (id: string, props: any) {
+      return class Resource {
+        static readonly id = id;
+        static readonly type = type;
+        static readonly props = props;
+
+        static readonly provider = {
+          tag: Tag,
+          effect: <Err, Req>(
+            eff: Effect<ProviderService<ReturnType<Ctor>>, Err, Req>,
+          ) => Layer.effect(Tag, eff),
+          succeed: (service: ProviderService<ReturnType<Ctor>>) =>
+            Layer.succeed(Tag, service),
         };
-      }
-    }
-  } as unknown as Ctor & {
-    type: ReturnType<Ctor>["type"];
-    new (): ReturnType<Ctor> & {
-      parent: ReturnType<Ctor>;
-    };
-    provider: {
-      tag: typeof Tag;
-      effect<Err, Req>(
-        eff: Effect<ProviderService<ReturnType<Ctor>>, Err, Req>,
-      ): Layer.Layer<Provider<ReturnType<Ctor>>, Err, Req>;
-      succeed(
-        service: ProviderService<ReturnType<Ctor>>,
-      ): Layer.Layer<Provider<ReturnType<Ctor>>>;
-    };
-  };
+
+        readonly id = id;
+        readonly type = type;
+        readonly props = props;
+      };
+    } as unknown as Ctor & {
+      type: ReturnType<Ctor>["type"];
+      new (): ReturnType<Ctor> & {
+        parent: ReturnType<Ctor>;
+      };
+      provider: {
+        tag: typeof Tag;
+        effect<Err, Req>(
+          eff: Effect<ProviderService<ReturnType<Ctor>>, Err, Req>,
+        ): Layer.Layer<Provider<ReturnType<Ctor>>, Err, Req>;
+        succeed(
+          service: ProviderService<ReturnType<Ctor>>,
+        ): Layer.Layer<Provider<ReturnType<Ctor>>>;
+      };
+    },
+    {
+      type: type,
+      provider: {
+        tag: Tag,
+        effect: <Err, Req>(
+          eff: Effect<ProviderService<ReturnType<Ctor>>, Err, Req>,
+        ) => Layer.effect(Tag, eff),
+        succeed: (service: ProviderService<ReturnType<Ctor>>) =>
+          Layer.succeed(Tag, service),
+      } as const,
+    },
+  );
 };
