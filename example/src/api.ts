@@ -5,23 +5,6 @@ import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
 import { Message, Messages } from "./messages.ts";
 
-const __ = Lambda.serve("Api", {
-  fetch: Effect.fn(function* (event) {
-    const msg = yield* S.validate(Message)(event.body).pipe(
-      Effect.catchAll(Effect.die),
-    );
-    yield* SQS.sendMessage(Messages, msg).pipe(
-      Effect.catchAll(() => Effect.void),
-    );
-    return {
-      body: JSON.stringify(null),
-    };
-  }),
-})({
-  main: import.meta.filename,
-  bindings: $(SQS.SendMessage(Messages)),
-});
-
 export class Api extends Lambda.serve("Api", {
   fetch: Effect.fn(function* (event) {
     const msg = yield* S.validate(Message)(event.body).pipe(

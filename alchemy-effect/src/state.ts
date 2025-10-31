@@ -6,7 +6,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import path from "node:path";
 import { App } from "./app.ts";
-import type { SerializedBinding } from "./binding.ts";
+import type { BindNode } from "./plan.ts";
 
 // SQL only?? no
 // DynamoDB is faster but bounded to 400KB (<10ms minimum latency)
@@ -52,43 +52,45 @@ import type { SerializedBinding } from "./binding.ts";
 
 // Scrap the "key-value" store on State/Scope
 
+export type ResourceStatus =
+  | "creating"
+  | "created"
+  | "updating"
+  | "updated"
+  | "deleting"
+  | "deleted";
+
 export type ResourceState = {
-  id: string;
   type: string;
-  status:
-    | "creating"
-    | "created"
-    | "updating"
-    | "updated"
-    | "deleting"
-    | "deleted";
+  id: string;
+  status: ResourceStatus;
   props: any;
   output: any;
-  bindings?: SerializedBinding[];
+  bindings?: BindNode[];
 };
 
 export class StateStoreError extends Data.TaggedError("StateStoreError")<{
   message: string;
 }> {}
 
+export interface StateService {
+  listApps(): Effect.Effect<string[], StateStoreError, never>;
+  listStages(appName?: string): Effect.Effect<string[], StateStoreError, never>;
+  // stub
+  get(
+    id: string,
+  ): Effect.Effect<ResourceState | undefined, StateStoreError, never>;
+  set<V extends ResourceState>(
+    id: string,
+    value: V,
+  ): Effect.Effect<V, StateStoreError, never>;
+  delete(id: string): Effect.Effect<void, StateStoreError, never>;
+  list(): Effect.Effect<string[], StateStoreError, never>;
+}
+
 export class State extends Context.Tag("AWS::Lambda::State")<
   State,
-  {
-    listApps(): Effect.Effect<string[], StateStoreError, never>;
-    listStages(
-      appName?: string,
-    ): Effect.Effect<string[], StateStoreError, never>;
-    // stub
-    get(
-      id: string,
-    ): Effect.Effect<ResourceState | undefined, StateStoreError, never>;
-    set<V extends ResourceState>(
-      id: string,
-      value: V,
-    ): Effect.Effect<V, StateStoreError, never>;
-    delete(id: string): Effect.Effect<void, StateStoreError, never>;
-    list(): Effect.Effect<string[], StateStoreError, never>;
-  }
+  StateService
 >() {}
 
 // TODO(sam): implement with SQLite3
@@ -138,13 +140,12 @@ export const localFs = Layer.effect(
           recover,
         ),
       set: <V extends ResourceState>(id: string, value: V) =>
-        fs.writeFileString(
-          resourceFile(id),
-          JSON.stringify(value, null, 2),
-        ).pipe(
-          recover,
-          Effect.map(() => value),
-        ),
+        fs
+          .writeFileString(resourceFile(id), JSON.stringify(value, null, 2))
+          .pipe(
+            recover,
+            Effect.map(() => value),
+          ),
       delete: (id) => fs.remove(resourceFile(id)).pipe(recover),
       list: () =>
         fs.readDirectory(stageDir).pipe(
@@ -157,28 +158,21 @@ export const localFs = Layer.effect(
   }),
 );
 
-export const inMemory = Layer.effect(
-  State,
-  Effect.gen(function* () {
-    const state = new Map<string, any>();
-    return {
-      listApps: () => Effect.succeed([]),
-      listStages: Effect.fn(function* () {
-        return [];
-      }),
-      get: Effect.fn(function* (id: string) {
-        return state.get(id);
-      }),
-      set: Effect.fn(function* <V>(id: string, value: V) {
-        state.set(id, value);
-        return value;
-      }),
-      delete: Effect.fn(function* (id: string) {
-        state.delete(id);
-      }),
-      list: Effect.fn(function* () {
-        return Array.from(state.keys());
-      }),
-    };
-  }),
-);
+export const inMemory = () => {
+  const state = new Map<string, any>();
+  return Layer.succeed(State, {
+    listApps: () => Effect.succeed([]),
+    // oxlint-disable-next-line require-yield
+    listStages: (_appName?: string) => Effect.succeed([]),
+    get: (id: string) => Effect.succeed(state.get(id)),
+    set: <V>(id: string, value: V) => {
+      state.set(id, value);
+      return Effect.succeed(value);
+    },
+    delete: (id: string) => {
+      state.delete(id);
+      return Effect.succeed(undefined);
+    },
+    list: () => Effect.succeed(Array.from(state.keys())),
+  });
+};

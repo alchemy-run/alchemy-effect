@@ -5,16 +5,6 @@ import type { Capability } from "./capability.ts";
 import type { Resource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
 
-export type SerializedBinding<B extends AnyBinding = AnyBinding> = Omit<
-  B,
-  "resource"
-> & {
-  resource: {
-    type: string;
-    id: string;
-  };
-};
-
 export interface BindingProps {
   [key: string]: any;
 }

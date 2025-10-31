@@ -21,6 +21,8 @@ export interface Policy<
   readonly runtime: F;
   readonly tags: Tags[];
   readonly capabilities: Capabilities[];
+  // phantom property (exists at runtime but not in types)
+  // readonly bindings: AnyBinding[];
   /** Add more Capabilities to a Policy */
   and<B extends AnyBinding[]>(
     ...bindings: B
@@ -46,10 +48,12 @@ export function Policy(...bindings: AnyBinding[]): any {
   return {
     runtime: bindings[0]["runtime"],
     capabilities: bindings.map((b) => b.capability),
-    tags: bindings.map(
-      (b) => class Tag extends Context.Tag(b.tag as any)<Tag, any>() {},
-    ),
+    tags: bindings.map((b) => Context.Tag(b.tag as any)()),
+    bindings,
     and: (...b2: AnyBinding[]) => Policy(...bindings, ...b2),
+  } as Policy<any, any, any> & {
+    // add the phantom property
+    bindings: AnyBinding[];
   };
 }
 

@@ -23,14 +23,31 @@ export interface Resource<
 > extends IResource<Type, ID, Props, Attrs> {
   // oxlint-disable-next-line no-misused-new
   new (): Resource<Type, ID, Props, Attrs>;
+  provider: {
+    tag: Context.TagClass<Provider<Resource>, Type, ProviderService<Resource>>;
+    effect<Err, Req>(
+      eff: Effect<ProviderService<Resource>, Err, Req>,
+    ): Layer.Layer<Provider<Resource>, Err, Req>;
+    succeed(
+      service: ProviderService<Resource>,
+    ): Layer.Layer<Provider<Resource>>;
+  };
 }
 
 export const Resource = <Ctor extends (id: string, props: any) => Resource>(
   type: ReturnType<Ctor>["type"],
 ) => {
   const Tag = Context.Tag(type)();
-  return class {
+  return class Resource {
     static readonly type = type;
+    static readonly provider = {
+      tag: Tag,
+      effect: <Err, Req>(
+        eff: Effect<ProviderService<ReturnType<Ctor>>, Err, Req>,
+      ) => Layer.effect(Tag, eff),
+      succeed: (service: ProviderService<ReturnType<Ctor>>) =>
+        Layer.succeed(Tag, service),
+    } as const;
     constructor(id: string, props: any) {
       if (!new.target) {
         return class {
@@ -44,18 +61,13 @@ export const Resource = <Ctor extends (id: string, props: any) => Resource>(
         };
       }
     }
-    static provider = {
-      effect: (eff: Effect<ProviderService<ReturnType<Ctor>>, any, any>) =>
-        Layer.effect(Tag, eff),
-      succeed: (service: ProviderService<ReturnType<Ctor>>) =>
-        Layer.succeed(Tag, service),
-    };
   } as unknown as Ctor & {
     type: ReturnType<Ctor>["type"];
     new (): ReturnType<Ctor> & {
       parent: ReturnType<Ctor>;
     };
     provider: {
+      tag: typeof Tag;
       effect<Err, Req>(
         eff: Effect<ProviderService<ReturnType<Ctor>>, Err, Req>,
       ): Layer.Layer<Provider<ReturnType<Ctor>>, Err, Req>;

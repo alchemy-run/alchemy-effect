@@ -24,14 +24,8 @@ export interface Service<
   Handler extends RuntimeHandler = RuntimeHandler,
   Props extends RuntimeProps<F, any> = RuntimeProps<F, any>,
   Attr = (F & { props: Props })["attr"],
-> extends Resource<F["type"], ID, Props, Attr> {
-  kind: "Service";
-  id: ID;
-  runtime: F;
-  handler: Handler;
-  props: Props;
-  attr: Attr;
-}
+> extends IService<ID, F, Handler, Props, Attr>,
+    Resource<F["type"], ID, Props, Attr> {}
 
 export const isService = (resource: any): resource is IService => {
   return (
