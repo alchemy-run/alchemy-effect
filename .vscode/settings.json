@@ -1,19 +1,16 @@
 {
   "typescript.experimental.useTsgo": false,
   "typescript.tsdk": "node_modules/typescript/lib",
-  "oxc.fmt.experimental": true,
+  "oxc.fmt.experimental": true, 
+  "oxc.enable": true,
+  "editor.defaultFormatter": "oxc.oxc-vscode",
   "editor.codeLens": false,
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "file",
+  "editor.inlayHints.enabled": "offUnlessPressed",
   "editor.codeActionsOnSave": {
-    "source.fixAll.ruff": "always",
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit"
-  },
-  "rewrap.autoWrap.enabled": false,
-  "[rust]": {
-    "editor.insertSpaces": true,
-    "editor.tabSize": 4
   },
   "[toml]": {
     "editor.defaultFormatter": "tamasfe.even-better-toml"
@@ -31,12 +28,10 @@
     "editor.defaultFormatter": null,
     "editor.formatOnSave": false
   },
-  "editor.inlayHints.enabled": "offUnlessPressed",
   "files.exclude": {
     "**/__pycache__": true,
     "**/*.pyc": true
   },
-  "vitest.disableWorkspaceWarning": true,
   "[typescript]": {
     "editor.indentSize": 2,
     "editor.defaultFormatter": "oxc.oxc-vscode"
@@ -53,5 +48,4 @@
     "editor.indentSize": 2,
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
-  "typescript.tsdk": "node_modules/typescript/lib"
 }

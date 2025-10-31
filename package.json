@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "bun tsc -b",
-    "format": "oxfmt '.' '!./alchemy/lib/' '!/**/*.mdx'",
+    "format": "oxfmt '.' '!./alchemy-effect*/lib/' '!/**/*.mdx'",
     "format:check": "bun run format -- --check"
   },
   "workspaces": {

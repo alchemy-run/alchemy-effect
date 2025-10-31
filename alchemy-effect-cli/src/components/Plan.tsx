@@ -7,7 +7,6 @@ import { Box, Text } from "ink";
 export interface PlanProps {
   plan: Plan;
 }
-
 export function Plan({ plan }: PlanProps): React.JSX.Element {
   const items = useMemo(
     () =>
@@ -22,8 +21,8 @@ export function Plan({ plan }: PlanProps): React.JSX.Element {
 
   if (items.length === 0) {
     return <Text color="gray">No changes planned</Text>;
-  }
-
+  } 
+ 
   const counts = items.reduce((acc, item) => (acc[item.action]++, acc), {
     create: 0,
     update: 0,
@@ -89,19 +88,21 @@ export function Plan({ plan }: PlanProps): React.JSX.Element {
 
               {/* Show bindings as sub-items */}
               {hasBindings &&
-                item.bindings!.map((binding) => {
-                  const bindingColor = bindingActionColor(binding.action);
-                  const bindingIcon = bindingActionIcon(binding.action);
+                item.bindings!.map((node) => {
+                  const bindingColor = bindingActionColor(node.action);
+                  const bindingIcon = bindingActionIcon(node.action);
                   return (
                     <Box
-                      key={binding.capability.resource.id}
+                      key={node.binding.capability.resource.id}
                       flexDirection="row"
                     >
                       <Box width={4}>
                         <Text color={bindingColor}> {bindingIcon}</Text>
                       </Box>
                       <Box width={40}>
-                        <Text color="cyan">{binding.capability.label}</Text>
+                        <Text color="cyan">
+                          {node.binding.capability.label}
+                        </Text>
                       </Box>
                     </Box>
                   );
