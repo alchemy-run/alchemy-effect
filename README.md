@@ -46,7 +46,7 @@ class Api extends Lambda.serve("Api", {
 
 # Bindings
 
-A Binding is a connection between a **Resource** and a **Function** that satisfies a **Capability** dependency (e.g. `SQS.SendMessage`).
+A Binding is a connection between a **Resource** and a **Function** that satisfies a **Capability** (aka. runtime dependency, e.g. `SQS.SendMessage(to: Messages)`).
 
 > [!TIP]
 > Bindings are inferred from your business logic and then type-checked to ensure least-privilege IAM policies.
@@ -56,7 +56,7 @@ class Api extends Lambda.serve("Api", {
   // ...
 })({
   main: import.meta.filename,
-  // Policy<Lambda.Function, SQS.SendMessage<Messages>, unknown>
+  // Policy<Lambda.Function, SQS.SendMessage<Messages>>
   bindings: $(SQS.SendMessage(Messages)),
 }) {}
 ```
@@ -64,31 +64,9 @@ class Api extends Lambda.serve("Api", {
 > [!CAUTION]
 > Curring (`Lambda.serve(..)({ .. })`) is required because there's a limitation in TypeScript. We hope to simplify this in the future.
 
-# Library-first
-
-`alchemy-effect` is library-first, meaning that even our CLI is exposed as a moduel you can import and use in your own projects.
-
-# Plan & Deploy
-
-Create a Plan and then Deploy it to your infrastructure
-
-<img src="./images/alchemy-effect-plan.gif" alt="alchemy-effect demo" width="600"/>
-
-## Type-Safe Plan
-
-All knowable information about the Plan is available at compile-time, for example the type of the Plan is:
-
-<img src="./images/alchemy-effect-plan-type.png" alt="alchemy-effect demo" width="600"/>
-
-> [!TIP]
-> These types can be used to implement type-level validation of infrastructure policies, e.g. disallowing publicly accessible S3 buckets.
-
 # Components
 
 Infrastructure and business logic can be encapsulated as a Component using a simple function. 
-
-> [!TIP]
-> Components are very similar to React components, but for infrastructure. Instead of declaring state in your closure and returning a React element, you declare Resources and return a `Function`.
 
 ```ts
 const Monitor = <const ID extends string, ReqAlarm, ReqResolved>(
@@ -135,3 +113,15 @@ const Monitor = <const ID extends string, ReqAlarm, ReqResolved>(
     });
 };
 ```
+
+> [!TIP]
+> Components are very similar to React components, but for infrastructure. Instead of declaring state in your closure and returning a React element, you declare Resources and return a `Function`.
+
+# Type-Safe Plan
+
+All knowable information about the Plan is available at compile-time, for example the type of the Plan is:
+
+<img src="./images/alchemy-effect-plan-type.png" alt="alchemy-effect demo" width="600"/>
+
+> [!TIP]
+> These types can be used to implement type-level validation of infrastructure policies, e.g. disallowing publicly accessible S3 buckets.
