@@ -19,4 +19,4 @@ for (const p of packages) {
     }
   }
 }
-await $`bunx pkg-pr-new publish --bun ./alchemy-effect ./alchemy-effect-aws ./alchemy-effect-cloudflare ./alchemy-effect-cli`;
+await $`bunx pkg-pr-new publish --bun ./alchemy-effect`;
