@@ -16,4 +16,5 @@ const packages = (await readdir("."))
   .filter((p) => !exclude.includes(p))
   .map((p) => `./${p}`);
 
+console.log(`bunx pkg-pr-new publish --pnpm ${packages.join(" ")}`);
 await $`bunx pkg-pr-new publish --pnpm ${packages.join(" ")}`;
