@@ -125,3 +125,8 @@ All knowable information about the Plan is available at compile-time, for exampl
 
 > [!TIP]
 > These types can be used to implement type-level validation of infrastructure policies, e.g. disallowing publicly accessible S3 buckets.
+
+# Building your own Resources, Capabilities, and Bindings
+
+> [!CAUTION]
+> WIP - this is coming soon!
