@@ -9,7 +9,7 @@ const yamlContent = yaml.stringify({
 });
 await writeFile("pnpm-workspace.yaml", yamlContent, "utf8");
 
-const exclude = ["alchemy-effect-cloudflare"];
+const exclude: string[] = [];
 
 const packages = (await readdir("."))
   .filter((p) => p.startsWith("alchemy-effect"))
