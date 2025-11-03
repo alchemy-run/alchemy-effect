@@ -1,10 +1,39 @@
 # alchemy-effect
 
-Alchemy Effect is an Infrastructure-as-Effects (iae) framework that unifies Business Logic and Infrastructure-as-Code into a unified model that ensures least-privilege IAM Policies with the TypeScript type system:
-1. *Resources* are declared in your code
-2. *Business Logic* is expressed as Effects accessing those resources
-3. *Bindings* are attached to Functions, Workers, Hosts, etc. and type-checked ensure least-privilege IAM policies
+> ⚠️ alchemy-effect is still experimental and not ready for production use (expect breaking changes).
 
-<img src="./images/alchemy-effect.gif" alt="alchemy-effect demo" width="600"/>
+Alchemy Effect is an **Infrastructure-as-Effects (iae)** framework that unifies business logic and Infrastructure-as-Code into a unified, type-safe model consisting of **Resources**, **Functions** and **Bindings**.
 
-<sub><i>Example showing type-safe IAM policies &ndash; it is not possible to under or over provide bindings.</i></sub>
+## Type-Checked, Least-Privilege IAM Policies
+
+> [!IMPORTANT]
+> <img src="./images/alchemy-effect.gif" alt="alchemy-effect demo" width="600"/>
+
+## Resources
+
+```ts
+class Messages extends SQS.Queue("Messages", {
+  fifo: true,
+  schema: S.String,
+}) {} 
+```
+
+## Bindings
+
+A Binding is a connectiong between a **Resource** and a **Function**.
+
+
+```ts
+// Policy<Lambda.Function, SQS.SendMessage<Messages>, unknown>
+class Api extends Lambda.serve("Api", {
+  fetch: Effect.fn(function* (event) {
+    yield* SQS.sendMessage(Messages, event.body!).pipe(
+      Effect.catchAll(() => Effect.void),
+    );
+  }),
+})({
+  main: import.meta.filename,
+  // 
+  bindings: $(SQS.SendMessage(Messages)),
+}) {}
+```
