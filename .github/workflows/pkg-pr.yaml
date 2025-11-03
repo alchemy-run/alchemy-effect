@@ -27,4 +27,4 @@ jobs:
       # pkr.pr.new relies on pnpm-workspace.yaml for the `--pnpm` flag
       # which we need to resolve `catalog:` dependencies prior to publishing
       - name: Prepare Publish
-        run: bun ./pkg-pr.ts
+        run: bun ./scripts/pkg-pr.ts
