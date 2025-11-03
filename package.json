@@ -10,10 +10,8 @@
     "url": "https://github.com/alchemy-run/alchemy"
   },
   "scripts": {
-    "build": "bun tsc -b && bun bundle",
+    "build": "bun tsc -b && bun run --filter alchemy-effect build",
     "build:clean": "git clean -fqdx . && bun i && bun run build",
-    "bundle": "bun run --filter alchemy-effect bundle",
-    "bundle:watch": "bun run --filter alchemy-effect bundle:watch",
     "format": "oxfmt '.' '!./alchemy-effect*/lib/' '!/**/*.mdx'",
     "format:check": "bun run format -- --check"
   },

@@ -20,7 +20,7 @@
     "alchemy-effect": "bin/alchemy-effect.js"
   },
   "scripts": {
-    "build": "tsc -b && bun bundle && bun pm pack",
+    "build": "bun bundle && bun pm pack",
     "bundle": "tsdown",
     "bundle:watch": "tsdown --watch"
   },
