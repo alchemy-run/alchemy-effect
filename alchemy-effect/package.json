@@ -73,6 +73,7 @@
     "@smithy/types": "^4.8.1",
     "@types/aws-lambda": "catalog:",
     "aws4fetch": "^1.0.20",
+    "cloudflare": "catalog:",
     "esbuild": "^0.25.12",
     "fast-xml-parser": "^5.2.5",
     "itty-aws": "0.4.1",
