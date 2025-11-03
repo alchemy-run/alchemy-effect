@@ -19,7 +19,7 @@ You will receive a type error if you mess up your Bindings:
 <img src="./images/alchemy-effect-policy-error.png" alt="alchemy-effect type errors" width="600"/>
 
 > [!TIP]
-> `Policy<Function, never, never>` means the Function has no (`never`) Capabilities, but you provided one (`SendMessage<Messages>`).
+> This error means you are missing the `SendMessage<Messages>` binding (you provided `never` instead of `SendMessage<Messages>`).
 
 ## Plan & Deploy
 An `alchemy-effect` program produces a Plan that can be reviewed prior to deployment:
@@ -27,7 +27,7 @@ An `alchemy-effect` program produces a Plan that can be reviewed prior to deploy
 <img src="./images/alchemy-effect-plan.gif" alt="alchemy-effect plan video" width="600"/>
 
 ## Type-Level Plan 
-All knowable information about the Plan is available at compile-time, for example the type of the Plan is:
+All knowable information about the Plan is available at compile-time:
 
 <img src="./images/alchemy-effect-plan-type.png" alt="alchemy-effect plan type" width="600"/>
 
