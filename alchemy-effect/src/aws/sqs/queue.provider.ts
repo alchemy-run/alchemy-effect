@@ -1,7 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 
-import { App, type ProviderService } from "@alchemy.run/core";
+import { App, type ProviderService } from "alchemy-effect";
 import { AccountID } from "../account.ts";
 import { Region } from "../region.ts";
 import { QueueClient } from "./queue.client.ts";

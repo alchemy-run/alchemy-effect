@@ -5,7 +5,7 @@ import { FileSystem } from "@effect/platform";
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 
-import { App, DotAlchemy } from "@alchemy.run/core";
+import { App, DotAlchemy } from "alchemy-effect";
 
 import type {
   CreateFunctionUrlConfigRequest,

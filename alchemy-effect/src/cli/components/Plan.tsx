@@ -1,7 +1,7 @@
 // biome-ignore lint/style/useImportType: UMD global
 import React, { useMemo } from "react";
 
-import type { BindNode, CRUD, Plan } from "@alchemy.run/core";
+import type { BindNode, CRUD, Plan } from "alchemy-effect";
 import { Box, Text } from "ink";
 
 export interface PlanProps {

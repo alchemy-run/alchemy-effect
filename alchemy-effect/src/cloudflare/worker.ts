@@ -1,4 +1,4 @@
-import { Runtime } from "@alchemy.run/core";
+import { Runtime } from "alchemy-effect";
 
 export const WorkerType = "AWS.Lambda.Worker";
 export type WorkerType = typeof WorkerType;

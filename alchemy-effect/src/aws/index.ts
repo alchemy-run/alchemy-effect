@@ -8,7 +8,19 @@ import * as S3 from "./s3.ts";
 import * as SQS from "./sqs/index.ts";
 import * as STS from "./sts.ts";
 
+// TODO(sam): should this be named?
 export * from "./profile.ts";
+
+export type * as Alchemy from "../index.ts";
+
+export * as Account from "./account.ts";
+export * as Credentials from "./credentials.ts";
+export * as IAM from "./iam.ts";
+export * as Lambda from "./lambda/index.ts";
+export * as Region from "./region.ts";
+export * as S3 from "./s3.ts";
+export * as SQS from "./sqs/index.ts";
+export * as STS from "./sts.ts";
 
 export const providers = Layer.merge(
   Layer.provide(Lambda.functionProvider(), Lambda.client()),

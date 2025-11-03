@@ -4,7 +4,7 @@ import React from "react";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 
-import * as Alchemy from "@alchemy.run/core";
+import * as Alchemy from "alchemy-effect";
 import { render } from "ink";
 
 import { ApprovePlan } from "./components/ApprovePlan.tsx";

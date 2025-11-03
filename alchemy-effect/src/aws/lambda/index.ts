@@ -7,7 +7,6 @@ export * from "./serve.ts";
 
 export * from "./consume.ts";
 
-export type * from "../account.ts";
-export type * from "../region.ts";
+export type * as Alchemy from "../index.ts";
 
 // export type * as lambda from "aws-lambda";

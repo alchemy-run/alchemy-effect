@@ -1,4 +1,4 @@
-import { Resource } from "@alchemy.run/core";
+import { Resource } from "alchemy-effect";
 
 export type KVProps = {
   title?: string;

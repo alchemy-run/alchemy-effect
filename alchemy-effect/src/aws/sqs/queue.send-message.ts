@@ -6,7 +6,7 @@ import {
   toEnvKey,
   type Capability,
   type To,
-} from "@alchemy.run/core";
+} from "alchemy-effect";
 import { Function } from "../lambda/index.ts";
 import { QueueClient } from "./queue.client.ts";
 import { Queue } from "./queue.ts";

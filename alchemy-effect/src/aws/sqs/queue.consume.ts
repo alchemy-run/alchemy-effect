@@ -1,4 +1,4 @@
-import { Binding, type Capability, type From } from "@alchemy.run/core";
+import { Binding, type Capability, type From } from "alchemy-effect";
 import type * as lambda from "aws-lambda";
 import { Function } from "../lambda/index.ts";
 import { Queue } from "./queue.ts";

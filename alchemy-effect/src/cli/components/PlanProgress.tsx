@@ -1,7 +1,7 @@
 // biome-ignore lint/style/useImportType: UMD global
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import type * as Alchemy from "@alchemy.run/core";
+import type * as Alchemy from "alchemy-effect";
 import { Box, Text } from "ink";
 import type { ProgressEventSource } from "../progress.tsx";
 import { useGlobalSpinner } from "../spinner.ts";

@@ -1,12 +1,6 @@
 import * as Effect from "effect/Effect";
 
-import {
-  $,
-  Binding,
-  type Capability,
-  declare,
-  toEnvKey,
-} from "@alchemy.run/core";
+import { $, Binding, type Capability, declare, toEnvKey } from "alchemy-effect";
 import { FunctionClient } from "./function.client.ts";
 import { Function } from "./function.ts";
 

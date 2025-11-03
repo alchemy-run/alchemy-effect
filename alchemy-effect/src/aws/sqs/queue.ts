@@ -1,6 +1,6 @@
 import type * as S from "effect/Schema";
 
-import { Resource } from "@alchemy.run/core";
+import { Resource } from "alchemy-effect";
 
 // required to avoid this error in consumers: "The inferred type of 'Messages' cannot be named without a reference to '../../effect-aws/node_modules/@types/aws-lambda'. This is likely not portable. A type annotation is necessary.ts(2742)"
 export type * as lambda from "aws-lambda";
