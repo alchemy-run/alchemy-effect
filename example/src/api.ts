@@ -1,28 +1,78 @@
-import { $ } from "alchemy-effect";
+import { $, Policy } from "alchemy-effect";
+import * as DynamoDB from "alchemy-effect/aws/dynamodb";
 import * as Lambda from "alchemy-effect/aws/lambda";
 import * as SQS from "alchemy-effect/aws/sqs";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as S from "effect/Schema";
-import { Message, Messages } from "./messages.ts";
+
+export class Users extends DynamoDB.Table("Users", {
+  partitionKey: "id",
+  sortKey: "name",
+  attributes: {
+    id: S.String,
+    name: S.String,
+  },
+}) {}
+
+export class UsersByName extends DynamoDB.SecondaryIndex("UsersByName", {
+  table: Users,
+  partitionKey: "name",
+  sortKey: "id",
+}) {}
 
 export class Api extends Lambda.serve("Api", {
   fetch: Effect.fn(function* (event) {
-    const msg = yield* S.validate(Message)(event.body).pipe(
-      Effect.catchAll(Effect.die),
-    );
-    yield* SQS.sendMessage(Messages, msg).pipe(
-      Effect.catchAll(() => Effect.void),
-    );
-    return {
-      body: JSON.stringify(null),
-    };
+    yield* DynamoDB.getItem({
+      table: Users,
+      key: {
+        id: "hello",
+        name: "world",
+      },
+      projectionExpression: "id, name",
+    }).pipe(Effect.catchAll(() => Effect.void));
+
+    yield* DynamoDB.getItem({
+      table: Users,
+      key: {
+        id: "goodbye",
+        name: "world",
+      },
+      returnConsumedCapacity: "INDEXES",
+    }).pipe(Effect.catchAll(() => Effect.void));
+    return undefined!;
   }),
 })({
+  bindings: $(
+    // TODO(sam): reduce union of constraints to a single policy
+    DynamoDB.GetItem(Users, {
+      leadingKeys: $.anyOf("hello"),
+      attributes: $.anyOf("id", "name"),
+    }),
+    DynamoDB.GetItem(Users, {
+      leadingKeys: $.anyOf("goodbye"),
+      returnConsumedCapacity: $.anyOf("INDEXES"),
+    }),
+  ),
   main: import.meta.filename,
-  bindings: $(SQS.SendMessage(Messages)),
 }) {}
 
+type ____ = DynamoDB.GetItem<
+  Users,
+  {
+    readonly leadingKeys: Policy.AnyOf<"hello">;
+    readonly attributes: Policy.AnyOf<"id" | "name">;
+  }
+> &
+  DynamoDB.GetItem<
+    Users,
+    {
+      readonly leadingKeys: Policy.AnyOf<"goodbye">;
+      readonly returnConsumedCapacity: Policy.AnyOf<"INDEXES">;
+    }
+  >;
+
 export default Api.handler.pipe(
-  Effect.provide(SQS.clientFromEnv()),
+  Effect.provide(Layer.mergeAll(SQS.clientFromEnv(), DynamoDB.clientFromEnv())),
   Lambda.toHandler,
 );

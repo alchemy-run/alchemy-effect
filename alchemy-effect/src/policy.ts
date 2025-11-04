@@ -57,6 +57,27 @@ export function Policy(...bindings: AnyBinding[]): any {
   };
 }
 
+export namespace Policy {
+  export interface AnyOf<in out T> {
+    readonly anyOf: T[];
+  }
+  export const anyOf = <const T>(...anyOf: T[]): AnyOf<T> => ({ anyOf });
+
+  export type Constraint<T> = Pick<
+    T,
+    {
+      [k in keyof T]: T[k] extends never
+        ? never
+        : T[k] extends AnyOf<never>
+          ? never
+          : k;
+    }[keyof T]
+  >;
+
+  // TODO(sam): one day we might infer policies using a compiler plugin, this is a placeholder
+  export const infer = <T>(): T => undefined!;
+}
+
 /** declare a Policy requiring Capabilities in some context */
 export const declare = <S extends Capability>() =>
   Effect.gen(function* () {}) as Effect.Effect<void, never, S>;
