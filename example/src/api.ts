@@ -1,4 +1,4 @@
-import { $, Policy } from "alchemy-effect";
+import { $ } from "alchemy-effect";
 import * as DynamoDB from "alchemy-effect/aws/dynamodb";
 import * as Lambda from "alchemy-effect/aws/lambda";
 import * as SQS from "alchemy-effect/aws/sqs";
@@ -23,54 +23,28 @@ export class UsersByName extends DynamoDB.SecondaryIndex("UsersByName", {
 
 export class Api extends Lambda.serve("Api", {
   fetch: Effect.fn(function* (event) {
-    yield* DynamoDB.getItem({
+    const item = yield* DynamoDB.getItem({
       table: Users,
       key: {
         id: "hello",
         name: "world",
       },
       projectionExpression: "id, name",
-    }).pipe(Effect.catchAll(() => Effect.void));
-
-    yield* DynamoDB.getItem({
-      table: Users,
-      key: {
-        id: "goodbye",
-        name: "world",
-      },
-      returnConsumedCapacity: "INDEXES",
-    }).pipe(Effect.catchAll(() => Effect.void));
-    return undefined!;
+    }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
+    return {
+      body: JSON.stringify(item?.Item ?? null),
+    };
   }),
 })({
+  main: import.meta.filename,
   bindings: $(
     // TODO(sam): reduce union of constraints to a single policy
     DynamoDB.GetItem(Users, {
       leadingKeys: $.anyOf("hello"),
       attributes: $.anyOf("id", "name"),
     }),
-    DynamoDB.GetItem(Users, {
-      leadingKeys: $.anyOf("goodbye"),
-      returnConsumedCapacity: $.anyOf("INDEXES"),
-    }),
   ),
-  main: import.meta.filename,
 }) {}
-
-type ____ = DynamoDB.GetItem<
-  Users,
-  {
-    readonly leadingKeys: Policy.AnyOf<"hello">;
-    readonly attributes: Policy.AnyOf<"id" | "name">;
-  }
-> &
-  DynamoDB.GetItem<
-    Users,
-    {
-      readonly leadingKeys: Policy.AnyOf<"goodbye">;
-      readonly returnConsumedCapacity: Policy.AnyOf<"INDEXES">;
-    }
-  >;
 
 export default Api.handler.pipe(
   Effect.provide(Layer.mergeAll(SQS.clientFromEnv(), DynamoDB.clientFromEnv())),

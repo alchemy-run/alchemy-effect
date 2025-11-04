@@ -1,5 +1,6 @@
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
 import { type AnyBinding, type Bind } from "./binding.ts";
 import type { Capability } from "./capability.ts";
 import type { Runtime } from "./runtime.ts";
@@ -61,7 +62,11 @@ export namespace Policy {
   export interface AnyOf<in out T> {
     readonly anyOf: T[];
   }
-  export const anyOf = <const T>(...anyOf: T[]): AnyOf<T> => ({ anyOf });
+  type Generalize<T> = T extends S.Schema<infer U> ? U : T;
+
+  export const anyOf = <const T>(...anyOf: T[]): AnyOf<Generalize<T>> => ({
+    anyOf: anyOf as Generalize<T>[],
+  });
 
   export type Constraint<T> = Pick<
     T,

@@ -14,22 +14,56 @@ import type { Identifier } from "./expr.ts";
 import type { ParseProjectionExpression } from "./projection.ts";
 import { Table } from "./table.ts";
 
-export interface GetItemConstraint {
-  leadingKeys?: Policy.AnyOf<any>;
-  attributes?: Policy.AnyOf<any>;
-  returnConsumedCapacity?: Policy.AnyOf<any>;
+export interface GetItemConstraint<
+  LeadingKeys extends Policy.AnyOf<any> = Policy.AnyOf<any>,
+  Attributes extends Policy.AnyOf<any> = Policy.AnyOf<any>,
+  ReturnConsumedCapacity extends Policy.AnyOf<any> = Policy.AnyOf<any>,
+> {
+  leadingKeys?: LeadingKeys;
+  attributes?: Attributes;
+  returnConsumedCapacity?: ReturnConsumedCapacity;
 }
 
 export interface GetItem<
-  T = Table,
-  Constraint extends GetItemConstraint = GetItemConstraint,
-> extends Capability<"AWS.DynamoDB.GetItem", T, Constraint> {}
+  T = unknown,
+  Constraint extends GetItemConstraint | unknown = unknown,
+> extends Capability<"AWS.DynamoDB.GetItem", T, Constraint> {
+  Constructor: GetItem;
+  Reduce: GetItem<
+    this["resource"],
+    {
+      [k in keyof Capability.Constraint.Simplify<
+        this["constraint"]
+      >]: Capability.Constraint.Simplify<this["constraint"]>[k];
+    }
+  >;
+}
 
 export const GetItem = Binding<
-  <T extends Table, const Constraint extends GetItemConstraint = never>(
+  <
+    T extends Table,
+    const LeadingKeys extends Policy.AnyOf<any> = Policy.AnyOf<string>,
+    const Attributes extends Policy.AnyOf<any> = never,
+    const ReturnConsumedCapacity extends
+      Policy.AnyOf<ReturnConsumedCapacity> = never,
+  >(
     table: T,
-    constraint?: Constraint,
-  ) => Binding<Function, GetItem<From<T>, Constraint>>
+    constraint?: GetItemConstraint<
+      LeadingKeys,
+      Attributes,
+      ReturnConsumedCapacity
+    >,
+  ) => Binding<
+    Function,
+    GetItem<
+      From<T>,
+      Policy.Constraint<{
+        leadingKeys: LeadingKeys;
+        attributes: Attributes;
+        returnConsumedCapacity: ReturnConsumedCapacity;
+      }>
+    >
+  >
 >(Function, "AWS.DynamoDB.GetItem");
 
 // see: https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazondynamodb.html
