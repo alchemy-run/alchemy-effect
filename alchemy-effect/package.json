@@ -65,6 +65,16 @@
       "bun": "./src/cloudflare/index.ts",
       "import": "./lib/cloudflare/index.js",
       "types": "./lib/cloudflare/index.d.ts"
+    },
+    "./cloudflare/kv-namespace": {
+      "bun": "./src/cloudflare/kv-namespace/index.ts",
+      "import": "./lib/cloudflare/kv-namespace/index.js",
+      "types": "./lib/cloudflare/kv-namespace/index.d.ts"
+    },
+    "./cloudflare/worker": {
+      "bun": "./src/cloudflare/worker/index.ts",
+      "import": "./lib/cloudflare/worker/index.js",
+      "types": "./lib/cloudflare/worker/index.d.ts"
     }
   },
   "dependencies": {
@@ -77,12 +87,14 @@
     "cloudflare": "catalog:",
     "esbuild": "^0.25.12",
     "fast-xml-parser": "^5.2.5",
+    "ignore": "^7.0.5",
     "itty-aws": "0.4.1",
     "jszip": "^3.10.1",
     "yaml": "^2.0.0"
   },
   "devDependencies": {
     "@clack/prompts": "^0.11.0",
+    "@cloudflare/workers-types": "^4.20251014.0",
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
     "@types/aws-lambda": "catalog:",

@@ -1,72 +1,74 @@
 import * as cf from "cloudflare";
+import { isRequestOptions, type APIPromise } from "cloudflare/core.mjs";
+import type { APIError } from "cloudflare/src/error.js";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
-import * as Option from "effect/Option";
-
-export class CloudflareApi extends Context.Tag("CloudflareApi")<
-  CloudflareApi,
-  cf.Cloudflare
->() {}
 
 export class CloudflareAccountId extends Context.Tag("CloudflareAccountId")<
   CloudflareAccountId,
   string
 >() {}
 
-export class CloudflareEmail extends Context.Tag("CloudflareEmail")<
-  CloudflareEmail,
-  string
->() {}
+type ToEffect<T> = {
+  [K in keyof T]: T[K] extends (...args: any[]) => any
+    ? (
+        ...args: Parameters<T[K]>
+      ) => Effect.Effect<UnwrapAPIPromise<ReturnType<T[K]>>, cf.APIError>
+    : T[K] extends Record<string, any>
+      ? ToEffect<T[K]>
+      : T[K];
+};
 
-export class CloudflareApiKey extends Context.Tag("CloudflareApiKey")<
-  CloudflareApiKey,
-  string
->() {}
+type UnwrapAPIPromise<T> = T extends APIPromise<infer U> ? U : T;
 
-export class CloudflareApiToken extends Context.Tag("CloudflareApiToken")<
-  CloudflareApiToken,
-  string
->() {}
-
-export class CloudflareBaseUrl extends Context.Tag("CloudflareBaseUrl")<
-  CloudflareBaseUrl,
-  string
->() {}
-
-const tryGet = <Tag extends Context.Tag<any, any>>(
-  tag: Tag,
-  defaultValue: Tag["Service"] | undefined,
-) =>
-  Effect.gen(function* () {
-    const value = yield* Effect.serviceOption(tag);
-    return Option.getOrElse(value, () => defaultValue);
+const createRecursiveProxy = <T extends object>(target: T): ToEffect<T> => {
+  return new Proxy(target as any, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (typeof value === "function") {
+        return Effect.fnUntraced(function* (...args: any[]) {
+          return yield* Effect.promise(async (signal) => {
+            let modifiedArgs: any[];
+            if (isRequestOptions(args[args.length - 1])) {
+              modifiedArgs = [
+                ...args.slice(0, -1),
+                { ...args[args.length - 1], signal },
+              ];
+            } else {
+              modifiedArgs = [...args, { signal }];
+            }
+            const result = await value(...modifiedArgs);
+            return result;
+          });
+        });
+      }
+      return createRecursiveProxy(value);
+    },
   });
+};
 
-export const cloudflareApi = Layer.effect(
-  CloudflareApi,
-  Effect.gen(function* () {
-    const email = yield* tryGet(
-      CloudflareEmail,
-      import.meta.env.CLOUDFLARE_EMAIL,
-    );
-    const apiKey = yield* tryGet(
-      CloudflareApiKey,
-      import.meta.env.CLOUDFLARE_API_KEY,
-    );
-    const apiToken = yield* tryGet(
-      CloudflareApiToken,
-      import.meta.env.CLOUDFLARE_API_TOKEN,
-    );
-    const baseURL = yield* tryGet(
-      CloudflareBaseUrl,
-      import.meta.env.CLOUDFLARE_BASE_URL,
-    );
-    return new cf.Cloudflare({
-      apiEmail: email,
-      apiKey: apiKey,
-      apiToken: apiToken,
-      baseURL: baseURL,
+export class Cloudflare extends Effect.Service<Cloudflare>()("Cloudflare", {
+  effect: (input?: {
+    apiEmail?: string;
+    apiKey?: string;
+    apiToken?: string;
+    baseUrl?: string;
+  }) => {
+    const api = new cf.Cloudflare({
+      apiEmail: input?.apiEmail ?? import.meta.env.CLOUDFLARE_EMAIL,
+      apiKey: input?.apiKey ?? import.meta.env.CLOUDFLARE_API_KEY,
+      apiToken: input?.apiToken ?? import.meta.env.CLOUDFLARE_API_TOKEN,
+      baseURL: input?.baseUrl ?? import.meta.env.CLOUDFLARE_BASE_URL,
     });
-  }),
-);
+    return Effect.succeed(createRecursiveProxy(api));
+  },
+}) {}
+
+export function notFoundToUndefined(): <T>(
+  self: Effect.Effect<T, APIError>,
+) => Effect.Effect<T | undefined, APIError> {
+  return Effect.catchIf(
+    (error) => error.status === 404,
+    () => Effect.succeed(undefined),
+  );
+}
