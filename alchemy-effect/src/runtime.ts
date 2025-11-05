@@ -38,7 +38,7 @@ export declare namespace Runtime {
 export type AnyRuntime = Runtime<string>;
 
 export interface RuntimeProps<Run extends Runtime, Req> {
-  bindings: Policy<Run, Capability.Simplify<Extract<Req, Capability>>>;
+  bindings: Policy<Run, Extract<Req, Capability>>;
 }
 
 export interface Runtime<

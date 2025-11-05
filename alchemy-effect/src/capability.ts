@@ -21,7 +21,7 @@ export interface Capability<
 }
 
 export declare namespace Capability {
-  export type Simplify<C extends Capability> = [C] extends [
+  export type Simplify<C> = [C] extends [
     {
       Constructor: { Reduce: any };
     },

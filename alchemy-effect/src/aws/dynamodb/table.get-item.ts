@@ -9,6 +9,7 @@ import {
 import { Effect } from "effect";
 import type { ReturnConsumedCapacity } from "itty-aws/dynamodb";
 import { Function } from "../lambda/index.ts";
+import { fromAttributeValue } from "./attribute-value.ts";
 import { DynamoDBClient } from "./client.ts";
 import type { Identifier } from "./expr.ts";
 import type { ParseProjectionExpression } from "./projection.ts";
@@ -86,7 +87,6 @@ export const getItem = <
   Effect.gen(function* () {
     type Parsed = ParseProjectionExpression<ProjectionExpression>;
     type Attributes = Extract<Parsed[number], Identifier>["name"];
-    // @ts-expect-error
     type LeadingKeys = Extract<Key[T["props"]["partitionKey"]], string>;
     type Constraint = Policy.Constraint<{
       leadingKeys: Policy.AnyOf<LeadingKeys>;
@@ -107,7 +107,7 @@ export const getItem = <
       return yield* Effect.die(new Error(`${tableNameEnv} is not set`));
     }
     const ddb = yield* DynamoDBClient;
-    return yield* ddb.getItem({
+    const { Item, ...rest } = yield* ddb.getItem({
       TableName: tableName,
       Key: {
         [table.props.partitionKey]: {
@@ -124,4 +124,20 @@ export const getItem = <
       ProjectionExpression: projectionExpression,
       ReturnConsumedCapacity: returnConsumedCapacity,
     });
+
+    return {
+      ...rest,
+      Item: Item
+        ? (Object.fromEntries(
+            yield* Effect.promise(() =>
+              Promise.all(
+                Object.entries(Item!).map(async ([key, value]) => [
+                  key,
+                  await fromAttributeValue(value),
+                ]),
+              ),
+            ),
+          ) as InstanceType<T["props"]["items"]> & Key)
+        : undefined,
+    };
   });

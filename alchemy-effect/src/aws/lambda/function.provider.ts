@@ -151,7 +151,7 @@ export const functionProvider = () =>
         );
         yield* bundle({
           // entryPoints: [props.main],
-          // we use a virtual entry point so that
+          // we use a virtual entry point so that we can pluck out the user's handler closure and only its dependencies (not the whole module)
           stdin: {
             contents: `import { ${handler} as handler } from "${file}";\nexport default handler;`,
             resolveDir: process.cwd(),

@@ -1,4 +1,4 @@
-import { $ } from "alchemy-effect";
+import { $, type } from "alchemy-effect";
 import * as DynamoDB from "alchemy-effect/aws/dynamodb";
 import * as Lambda from "alchemy-effect/aws/lambda";
 import * as SQS from "alchemy-effect/aws/sqs";
@@ -6,42 +6,51 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as S from "effect/Schema";
 
-export class Users extends DynamoDB.Table("Users", {
+export interface User {
+  id: `USER#${string}`;
+  name: string;
+  age: number;
+}
+
+export interface CartItem {
+  id: `CART_ITEM#${string}`;
+  name: string;
+  productId: string;
+}
+
+export class SingleTable extends DynamoDB.Table("Users", {
   partitionKey: "id",
   sortKey: "name",
+  items: type<User | CartItem>,
   attributes: {
     id: S.String,
     name: S.String,
   },
 }) {}
 
-export class UsersByName extends DynamoDB.SecondaryIndex("UsersByName", {
-  table: Users,
-  partitionKey: "name",
-  sortKey: "id",
-}) {}
-
 export class Api extends Lambda.serve("Api", {
   fetch: Effect.fn(function* (event) {
+    const id = "USER#123";
+
     const item = yield* DynamoDB.getItem({
-      table: Users,
+      table: SingleTable,
       key: {
-        id: "hello",
+        id,
         name: "world",
       },
-      projectionExpression: "id, name",
+      projectionExpression: `${$.join(["id", "name"], ",")}, age`,
     }).pipe(Effect.catchAll(() => Effect.succeed(undefined)));
+
     return {
-      body: JSON.stringify(item?.Item ?? null),
+      body: JSON.stringify(item?.Item),
     };
   }),
 })({
   main: import.meta.filename,
   bindings: $(
-    // TODO(sam): reduce union of constraints to a single policy
-    DynamoDB.GetItem(Users, {
-      leadingKeys: $.anyOf("hello"),
-      attributes: $.anyOf("id", "name"),
+    DynamoDB.GetItem(SingleTable, {
+      leadingKeys: $.anyOf("USER#123"),
+      attributes: $.anyOf("id", "name", "age"),
     }),
   ),
 }) {}

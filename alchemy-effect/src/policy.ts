@@ -27,7 +27,11 @@ export interface Policy<
   /** Add more Capabilities to a Policy */
   and<B extends AnyBinding[]>(
     ...bindings: B
-  ): Policy<F, B[number]["capability"] | Capabilities, Tags>;
+  ): Policy<
+    F,
+    Capability.Simplify<B[number]["capability"] | Capabilities>,
+    Tags
+  >;
 }
 
 export type $<T> = Instance<T>;
@@ -67,6 +71,29 @@ export namespace Policy {
   export const anyOf = <const T>(...anyOf: T[]): AnyOf<Generalize<T>> => ({
     anyOf: anyOf as Generalize<T>[],
   });
+
+  export const join = <
+    const Strings extends readonly string[],
+    const Delimiter extends string,
+  >(
+    strings: Strings,
+    delimiter: Delimiter,
+  ) => strings.join(delimiter) as Join<Strings, Delimiter>;
+
+  type ___ = Join<string[], ",">;
+  type Join<
+    T extends readonly string[],
+    Delimiter extends string,
+  > = T extends readonly [infer First extends string]
+    ? First
+    : T extends readonly [
+          infer First extends string,
+          ...infer Rest extends readonly string[],
+        ]
+      ? `${First}${Delimiter}${Join<Rest, Delimiter>}`
+      : T extends string[]
+        ? string
+        : "";
 
   export type Constraint<T> = Pick<
     T,
