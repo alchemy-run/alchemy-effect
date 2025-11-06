@@ -25,6 +25,15 @@ export interface TableProps<
   WarmThroughput extends DynamoDB.WarmThroughput | undefined =
     | DynamoDB.WarmThroughput
     | undefined,
+  OnDemandThroughput extends DynamoDB.OnDemandThroughput | undefined =
+    | DynamoDB.OnDemandThroughput
+    | undefined,
+  ProvisionedThroughput extends DynamoDB.ProvisionedThroughput | undefined =
+    | DynamoDB.ProvisionedThroughput
+    | undefined,
+  TableClass extends DynamoDB.TableClass | undefined =
+    | DynamoDB.TableClass
+    | undefined,
 > {
   items: type<Items>;
   tableName?: string;
@@ -33,9 +42,12 @@ export interface TableProps<
   sortKey?: SortKey;
   billingMode?: BillingMode;
   deletionProtectionEnabled?: boolean;
+  onDemandThroughput?: OnDemandThroughput;
+  provisionedThroughput?: ProvisionedThroughput;
   sseSpecification?: SSESpecification;
   timeToLiveSpecification?: TimeToLiveSpecification;
   warmThroughput?: WarmThroughput;
+  tableClass?: TableClass;
 }
 
 export interface TableAttrs<Props extends TableProps> {
@@ -84,6 +96,13 @@ export const Table = Resource<{
     const WarmThroughput extends
       | DynamoDB.WarmThroughput
       | undefined = undefined,
+    const OnDemandThroughput extends
+      | DynamoDB.OnDemandThroughput
+      | undefined = undefined,
+    const ProvisionedThroughput extends
+      | DynamoDB.ProvisionedThroughput
+      | undefined = undefined,
+    const TableClass extends DynamoDB.TableClass | undefined = undefined,
   >(
     id: ID,
     props: TableProps<
@@ -94,7 +113,10 @@ export const Table = Resource<{
       BillingMode,
       SSESpecification,
       TimeToLiveSpecification,
-      WarmThroughput
+      WarmThroughput,
+      OnDemandThroughput,
+      ProvisionedThroughput,
+      TableClass
     >,
   ): Table<
     ID,
@@ -106,7 +128,10 @@ export const Table = Resource<{
       BillingMode,
       SSESpecification,
       TimeToLiveSpecification,
-      WarmThroughput
+      WarmThroughput,
+      OnDemandThroughput,
+      ProvisionedThroughput,
+      TableClass
     >
   >;
 }>("AWS.DynamoDB.Table");

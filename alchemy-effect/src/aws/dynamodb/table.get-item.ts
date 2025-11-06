@@ -45,8 +45,7 @@ export const GetItem = Binding<
     T extends Table,
     const LeadingKeys extends Policy.AnyOf<any> = Policy.AnyOf<string>,
     const Attributes extends Policy.AnyOf<any> = never,
-    const ReturnConsumedCapacity extends
-      Policy.AnyOf<ReturnConsumedCapacity> = never,
+    const ReturnConsumedCapacity extends Policy.AnyOf<any> = never,
   >(
     table: T,
     constraint?: GetItemConstraint<
@@ -140,4 +139,39 @@ export const getItem = <
           ) as InstanceType<T["props"]["items"]> & Key)
         : undefined,
     };
+  });
+
+export const getItemFromLambdaFunction = () =>
+  GetItem.provider.succeed({
+    attach: ({ source: table, props }) => ({
+      env: {
+        [toEnvKey(table.id, "TABLE_NAME")]: table.attr.tableName,
+        [toEnvKey(table.id, "TABLE_ARN")]: table.attr.tableArn,
+      },
+      policyStatements: [
+        {
+          Sid: "GetItem",
+          Effect: "Allow",
+          Action: ["dynamodb:GetItem"],
+          Resource: [table.attr.tableArn],
+          Condition:
+            props?.leadingKeys ||
+            props?.attributes ||
+            props?.returnConsumedCapacity
+              ? {
+                  // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazondynamodb.html#amazondynamodb-dynamodb_LeadingKeys
+
+                  // TODO(sam): add StringLike for prefixes, templates, etc.
+                  "ForAllValues:StringEquals": {
+                    "dynamodb:LeadingKeys": props.leadingKeys
+                      ?.anyOf as string[],
+                    "dynamodb:Attributes": props.attributes?.anyOf as string[],
+                    "dynamodb:ReturnConsumedCapacity": props
+                      .returnConsumedCapacity?.anyOf as string[],
+                  },
+                }
+              : undefined,
+        },
+      ],
+    }),
   });

@@ -1,7 +1,7 @@
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as S from "effect/Schema";
-import type { AttributeValue } from "itty-aws/dynamodb";
+import type { AttributeValue, ScalarAttributeType } from "itty-aws/dynamodb";
 import {
   getSetValueAST,
   isClassSchema,
@@ -201,6 +201,12 @@ const getType = (value: any): ValueType | ValueType[] => {
   } else {
     throw new Error(`Unknown value type: ${typeof value}`);
   }
+};
+
+export const isScalarAttributeType = (
+  type: string,
+): type is ScalarAttributeType => {
+  return type === "S" || type === "N" || type === "B";
 };
 
 export const toAttributeType = (schema: S.Schema<any>) => {
