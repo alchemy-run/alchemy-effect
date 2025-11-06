@@ -3,7 +3,7 @@
   "exclude": ["node_modules", "dist"],
   "references": [
     { "path": "./alchemy-effect/tsconfig.json" },
-    { "path": "./example/tsconfig.json" },
+    { "path": "./examples/aws/tsconfig.json" },
   ],
   "compilerOptions": {
     "plugins": [
