@@ -69,7 +69,7 @@ export const GetItem = Binding<
 
 // see: https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazondynamodb.html
 export const getItem = <
-  T extends Table,
+  T extends Table<string, any>,
   const Key extends Table.Key<T>,
   const ProjectionExpression extends string = never,
   const Capacity extends ReturnConsumedCapacity = never,

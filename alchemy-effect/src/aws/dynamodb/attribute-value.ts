@@ -1,6 +1,19 @@
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
+import * as S from "effect/Schema";
 import type { AttributeValue } from "itty-aws/dynamodb";
+import {
+  getSetValueAST,
+  isClassSchema,
+  isListSchema,
+  isMapSchema,
+  isNumberSchema,
+  isRecordLikeSchema,
+  isRecordSchema,
+  isSetSchema,
+  isStringSchema,
+  isStructSchema,
+} from "../../schema.ts";
 
 // this seems important for handling S.Struct.Fields https://effect.website/docs/schema/classes/#recursive-types-with-different-encoded-and-type
 // interface CategoryEncoded extends Schema.Struct.Encoded<typeof fields> { .. }
@@ -56,15 +69,35 @@ export const toAttributeValue: (
         };
       } else if (setType === "NS") {
         return {
-          NS: Array.from(value.values()),
+          NS: Array.from(value.values()).map((value) => value.toString(10)),
         };
       } else if (setType === "BS") {
         return {
           BS: Array.from(value.values()),
         };
       } else {
-        throw new Error(`Unknown set type: ${setType}`);
+        return {
+          L: yield* Effect.all(
+            Array.from(value.values()).map(toAttributeValue),
+          ),
+        };
       }
+    } else if (Buffer.isBuffer(value)) {
+      return {
+        B: new Uint8Array(value),
+      };
+    } else if (value instanceof File) {
+      return {
+        B: new Uint8Array(yield* Effect.promise(() => value.arrayBuffer())),
+      };
+    } else if (value instanceof Uint8Array) {
+      return {
+        B: value,
+      };
+    } else if (value instanceof ArrayBuffer) {
+      return {
+        B: new Uint8Array(value),
+      };
     } else if (typeof value === "object") {
       return {
         M: Object.fromEntries(
@@ -74,18 +107,6 @@ export const toAttributeValue: (
             ),
           ),
         ),
-      };
-    } else if (value instanceof Uint8Array) {
-      return {
-        B: value,
-      };
-    } else if (value instanceof Buffer) {
-      return {
-        B: value.buffer,
-      };
-    } else if (value instanceof File) {
-      return {
-        B: new Uint8Array(yield* Effect.promise(() => value.arrayBuffer())),
       };
     }
 
@@ -101,7 +122,7 @@ export const toAttributeValue: (
 export const fromAttributeValue = (value: AttributeValue): any => {
   if (value.NULL) {
     return null;
-  } else if (value.BOOL) {
+  } else if (typeof value.BOOL === "boolean") {
     return value.BOOL;
   } else if (value.L) {
     return value.L.map(fromAttributeValue);
@@ -181,3 +202,33 @@ const getType = (value: any): ValueType | ValueType[] => {
     throw new Error(`Unknown value type: ${typeof value}`);
   }
 };
+
+export const toAttributeType = (schema: S.Schema<any>) => {
+  if (isStringSchema(schema)) {
+    return "S";
+  } else if (isNumberSchema(schema)) {
+    return "N";
+  } else if (isRecordLikeSchema(schema)) {
+    return "M";
+  } else if (isStringSetSchema(schema)) {
+    return "SS";
+  } else if (isNumberSetSchema(schema)) {
+    return "NS";
+  } else if (isListSchema(schema)) {
+    return "L";
+  }
+  return "S";
+};
+
+export const isMapSchemaType = (schema: S.Schema<any>) =>
+  isMapSchema(schema) ||
+  isRecordSchema(schema) ||
+  isStructSchema(schema) ||
+  isClassSchema(schema) ||
+  false;
+
+export const isStringSetSchema = (schema: S.Schema<any>) =>
+  isSetSchema(schema) && isStringSchema(getSetValueAST(schema));
+
+export const isNumberSetSchema = (schema: S.Schema<any>) =>
+  isSetSchema(schema) && isNumberSchema(getSetValueAST(schema));

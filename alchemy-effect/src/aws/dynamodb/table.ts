@@ -1,9 +1,60 @@
 import * as S from "effect/Schema";
 import { Resource } from "../../resource.ts";
 import type { type } from "../../type.ts";
+import type { AccountID } from "../account.ts";
+import type { RegionID } from "../region.ts";
 
-export type AttributesSchema<Items> = {
-  [k in keyof Items]?: S.Schema<ToAttribute<Items[k]>>;
+import type * as DynamoDB from "itty-aws/dynamodb";
+
+export interface TableProps<
+  Items = any,
+  Attributes extends AttributesSchema<
+    Items,
+    PartitionKey,
+    SortKey
+  > = AttributesSchema<Items, keyof Items, keyof Items | undefined>,
+  PartitionKey extends keyof Items = keyof Items,
+  SortKey extends keyof Items | undefined = keyof Items | undefined,
+  BillingMode extends DynamoDB.BillingMode = DynamoDB.BillingMode,
+  SSESpecification extends DynamoDB.SSESpecification | undefined =
+    | DynamoDB.SSESpecification
+    | undefined,
+  TimeToLiveSpecification extends DynamoDB.TimeToLiveSpecification | undefined =
+    | DynamoDB.TimeToLiveSpecification
+    | undefined,
+  WarmThroughput extends DynamoDB.WarmThroughput | undefined =
+    | DynamoDB.WarmThroughput
+    | undefined,
+> {
+  items: type<Items>;
+  tableName?: string;
+  attributes: Attributes;
+  partitionKey: PartitionKey;
+  sortKey?: SortKey;
+  billingMode?: BillingMode;
+  deletionProtectionEnabled?: boolean;
+  sseSpecification?: SSESpecification;
+  timeToLiveSpecification?: TimeToLiveSpecification;
+  warmThroughput?: WarmThroughput;
+}
+
+export interface TableAttrs<Props extends TableProps> {
+  tableName: Props["tableName"] extends string ? Props["tableName"] : string;
+  tableId: string;
+  tableArn: `arn:aws:dynamodb:${RegionID}:${AccountID}:table/${this["tableName"]}`;
+  partitionKey: Props["partitionKey"];
+  sortKey: Props["sortKey"];
+  // etc...
+}
+
+export type AttributesSchema<
+  Items,
+  PartitionKey extends keyof Items,
+  SortKey extends keyof Items | undefined,
+> = {
+  [k in PartitionKey | (SortKey extends undefined ? never : SortKey)]: S.Schema<
+    ToAttribute<Items[k]>
+  >;
 };
 
 export type ToAttribute<S> = S extends string
@@ -18,21 +69,52 @@ export const Table = Resource<{
   <
     const ID extends string,
     const Items,
-    const Attributes extends AttributesSchema<Items>,
-    const PartitionKey extends keyof Attributes,
-    const SortKey extends keyof Attributes | undefined = undefined,
+    const Attributes extends NoInfer<
+      AttributesSchema<Items, PartitionKey, SortKey>
+    >,
+    const PartitionKey extends keyof Items,
+    const SortKey extends keyof Items | undefined = undefined,
+    const BillingMode extends DynamoDB.BillingMode = "PAY_PER_REQUEST",
+    const SSESpecification extends
+      | DynamoDB.SSESpecification
+      | undefined = undefined,
+    const TimeToLiveSpecification extends
+      | DynamoDB.TimeToLiveSpecification
+      | undefined = undefined,
+    const WarmThroughput extends
+      | DynamoDB.WarmThroughput
+      | undefined = undefined,
   >(
     id: ID,
-    props: TableProps<Items, Attributes, PartitionKey, SortKey>,
-  ): Table<ID, TableProps<Items, Attributes, PartitionKey, SortKey>>;
+    props: TableProps<
+      Items,
+      Attributes,
+      PartitionKey,
+      SortKey,
+      BillingMode,
+      SSESpecification,
+      TimeToLiveSpecification,
+      WarmThroughput
+    >,
+  ): Table<
+    ID,
+    TableProps<
+      Items,
+      Attributes,
+      PartitionKey,
+      SortKey,
+      BillingMode,
+      SSESpecification,
+      TimeToLiveSpecification,
+      WarmThroughput
+    >
+  >;
 }>("AWS.DynamoDB.Table");
 
 export interface Table<
   ID extends string = string,
-  Props extends TableProps = any,
-> extends Resource<"AWS.DynamoDB.Table", ID, Props, TableAttrs<Props>> {
-  Item: Props["items"];
-}
+  Props extends TableProps = TableProps,
+> extends Resource<"AWS.DynamoDB.Table", ID, Props, TableAttrs<Props>> {}
 
 export declare namespace Table {
   export type PartitionKey<T extends Table> = T["props"]["partitionKey"];
@@ -45,22 +127,3 @@ export declare namespace Table {
       }
     : {};
 }
-
-export interface TableProps<
-  Items = any,
-  Attributes extends AttributesSchema<Items> = AttributesSchema<Items>,
-  PartitionKey extends keyof Attributes = keyof Attributes,
-  SortKey extends keyof Attributes | undefined = keyof Attributes | undefined,
-> {
-  tableName?: string;
-  items: type<Items>;
-  attributes: Attributes;
-  partitionKey: PartitionKey;
-  sortKey?: SortKey;
-}
-
-export type TableAttrs<Props extends TableProps> = {
-  tableName: string;
-  partitionKey: Props["partitionKey"];
-  sortKey: Props["sortKey"];
-};
