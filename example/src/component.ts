@@ -99,6 +99,7 @@ const MonitorComplex = <const ID extends string, ReqAlarm, ReqResolved>(
           yield* onResolved(batch);
         }
       }),
+      // @ts-expect-error - TODO(sam): fix this
     })({
       ...props,
       bindings: bindings.and(SQS.SendMessage(Messages)),

@@ -1,2 +1,2 @@
 export type type<T> = new () => T;
-export declare const type: new <T>() => T;
+export const type = class {} as new <T>() => T;
