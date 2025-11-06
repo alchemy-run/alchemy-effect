@@ -82,10 +82,8 @@ const MonitorComplex = <const ID extends string, ReqAlarm, ReqResolved>(
   return <const Props extends Lambda.FunctionProps<ReqAlarm | ReqResolved>>({
     bindings,
     ...props
-  }: Props) => {
-    const b = bindings.and(SQS.SendMessage(Messages));
-
-    return Lambda.consume(id, {
+  }: Props) =>
+    Lambda.consume(id, {
       queue: Messages,
       handle: Effect.fn(function* (batch) {
         yield* SQS.sendMessage(Messages, {
@@ -99,12 +97,10 @@ const MonitorComplex = <const ID extends string, ReqAlarm, ReqResolved>(
           yield* onResolved(batch);
         }
       }),
-      // @ts-expect-error - TODO(sam): fix this
     })({
       ...props,
       bindings: bindings.and(SQS.SendMessage(Messages)),
     });
-  };
 };
 
 // src/my-api.ts
