@@ -11,6 +11,7 @@ import type {
   CreateFunctionUrlConfigRequest,
   UpdateFunctionUrlConfigRequest,
 } from "itty-aws/lambda";
+import { ESBuild } from "../../esbuild.ts";
 import {
   createTagger,
   createTagsList,
@@ -34,6 +35,7 @@ export const functionProvider = () =>
       const app = yield* App;
       const dotAlchemy = yield* DotAlchemy;
       const fs = yield* FileSystem.FileSystem;
+      const esbuild = yield* ESBuild;
 
       // const assets = yield* Assets;
 
@@ -149,35 +151,34 @@ export const functionProvider = () =>
         if (!file.startsWith(".")) {
           file = `./${file}`;
         }
-        const { bundle } = yield* Effect.promise(() => import("../bundle.ts"));
         const outfile = path.join(
           dotAlchemy,
           "out",
           `${app.name}-${app.stage}-${id}.ts`,
         );
-        yield* bundle({
-          // entryPoints: [props.main],
-          // we use a virtual entry point so that we can pluck out the user's handler closure and only its dependencies (not the whole module)
-          stdin: {
-            contents: `import { ${handler} as handler } from "${file}";\nexport default handler;`,
-            resolveDir: process.cwd(),
-            loader: "ts",
-            sourcefile: "__index.ts",
-          },
-          bundle: true,
-          format: "esm",
-          platform: "node",
-          target: "node22",
-          sourcemap: true,
-          treeShaking: true,
-          write: true,
-          outfile,
-          minify: true,
-          external: ["@aws-sdk/*", "@smithy/*"],
-        });
-        const code = yield* fs
-          .readFile(outfile)
-          .pipe(Effect.catchAll(Effect.die));
+        yield* esbuild
+          .build({
+            // entryPoints: [props.main],
+            // we use a virtual entry point so that we can pluck out the user's handler closure and only its dependencies (not the whole module)
+            stdin: {
+              contents: `import { ${handler} as handler } from "${file}";\nexport default handler;`,
+              resolveDir: process.cwd(),
+              loader: "ts",
+              sourcefile: "__index.ts",
+            },
+            bundle: true,
+            format: "esm",
+            platform: "node",
+            target: "node22",
+            sourcemap: true,
+            treeShaking: true,
+            write: true,
+            outfile,
+            minify: true,
+            external: ["@aws-sdk/*", "@smithy/*"],
+          })
+          .pipe(Effect.orDie);
+        const code = yield* fs.readFile(outfile).pipe(Effect.orDie);
         return {
           code,
           hash: yield* hashCode(code),

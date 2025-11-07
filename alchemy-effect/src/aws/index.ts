@@ -23,9 +23,13 @@ export * as Region from "./region.ts";
 export * as S3 from "./s3.ts";
 export * as SQS from "./sqs/index.ts";
 export * as STS from "./sts.ts";
+import { ESBuild } from "../esbuild.ts";
 
 export const providers = Layer.mergeAll(
-  Layer.provide(Lambda.functionProvider(), Lambda.client()),
+  Layer.provide(
+    Layer.provideMerge(Lambda.functionProvider(), ESBuild.Default),
+    Lambda.client(),
+  ),
   Layer.provide(SQS.queueProvider(), SQS.client()),
   Layer.provide(DynamoDB.tableProvider(), DynamoDB.client()),
 );
