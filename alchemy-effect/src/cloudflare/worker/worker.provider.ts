@@ -149,7 +149,7 @@ export const workerProvider = () =>
             name: "ASSETS",
           });
         }
-        yield* session.note("Updating worker...");
+        yield* session.note("Uploading worker...");
         const worker = yield* api.workers.scripts.update(name, {
           account_id: accountId,
           metadata: metadata,
@@ -159,13 +159,12 @@ export const workerProvider = () =>
             }),
           ],
         });
-        const subdomain = news.subdomain ?? {
-          enabled: true,
-          previews_enabled: true,
-        };
         if (!olds || news.subdomain?.enabled !== olds.subdomain?.enabled) {
-          yield* session.note("Updating worker subdomain...");
-          yield* setWorkerSubdomain(name, subdomain.enabled !== false);
+          const enable = news.subdomain?.enabled !== false;
+          yield* session.note(
+            `${enable ? "Enabling" : "Disabling"} workers.dev subdomain...`,
+          );
+          yield* setWorkerSubdomain(name, enable);
         }
         return {
           id: worker.id,
@@ -176,9 +175,10 @@ export const workerProvider = () =>
             enabled: true,
             previews_enabled: true,
           },
-          url: subdomain.enabled
-            ? `https://${name}.${yield* getAccountSubdomain(accountId)}.workers.dev`
-            : undefined,
+          url:
+            news.subdomain?.enabled !== false
+              ? `https://${name}.${yield* getAccountSubdomain(accountId)}.workers.dev`
+              : undefined,
           tags: metadata.tags,
           accountId,
           hash: {
@@ -207,10 +207,23 @@ export const workerProvider = () =>
           ) {
             return { action: "update" };
           }
-          console.log(diff(olds, news));
           return {
-            // this doesn't work - seems like bindings are different
-            action: diff(olds, news),
+            // TODO: remove when native props check fallback is supported
+            action: ((
+              { bindings: oldBindings, ...olds }: WorkerProps,
+              { bindings: newBindings, ...news }: WorkerProps,
+            ) => {
+              if (JSON.stringify(olds) !== JSON.stringify(news)) {
+                return "update";
+              }
+              return oldBindings.capabilities.length ===
+                newBindings.capabilities.length &&
+                oldBindings.capabilities.every(
+                  (c, index) => c.sid === newBindings.capabilities[index].sid,
+                )
+                ? "noop"
+                : "update";
+            })(olds, news),
           };
         }),
         create: Effect.fnUntraced(function* ({ id, news, bindings, session }) {
@@ -254,18 +267,3 @@ export const workerProvider = () =>
       };
     }),
   );
-
-const diff = <T extends WorkerProps>(
-  { bindings: oldBindings, ...olds }: T,
-  { bindings: newBindings, ...news }: T,
-) => {
-  if (JSON.stringify(olds) !== JSON.stringify(news)) {
-    return "update";
-  }
-  return oldBindings.capabilities.length === newBindings.capabilities.length &&
-    oldBindings.capabilities.every(
-      (c, index) => c.sid === newBindings.capabilities[index].sid,
-    )
-    ? "noop"
-    : "update";
-};
