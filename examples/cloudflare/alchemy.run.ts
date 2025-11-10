@@ -2,9 +2,9 @@ import { FetchHttpClient } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
 import * as Alchemy from "alchemy-effect";
 import * as CLI from "alchemy-effect/cli";
-import * as Cloudflare from "alchemy-effect/cloudflare";
-import { Layer } from "effect";
+import * as Cloudflare from "alchemy-effect/cloudflare/live";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import { Api } from "./src/api.ts";
 
 const plan = Alchemy.plan({
@@ -15,7 +15,7 @@ const plan = Alchemy.plan({
 const app = Alchemy.app({ name: "my-app", stage: "dev-5" });
 
 const providers = Layer.provideMerge(
-  Layer.mergeAll(Cloudflare.live, Alchemy.State.localFs, CLI.layer),
+  Layer.mergeAll(Cloudflare.live(), Alchemy.State.localFs, CLI.layer),
   Layer.mergeAll(app, Alchemy.dotAlchemy),
 );
 
@@ -25,7 +25,7 @@ const layers = Layer.provideMerge(
 );
 
 const stack = await plan.pipe(
-  Effect.tap((plan) => Effect.log(plan)),
+  // Effect.tap((plan) => Effect.log(plan)),
   Alchemy.apply,
   Effect.provide(layers),
   Effect.tap((stack) => Effect.log(stack?.Api.url)),

@@ -2,10 +2,10 @@ import { FileSystem, Path } from "@effect/platform";
 import type { PlatformError } from "@effect/platform/Error";
 import { Context, Data, Layer } from "effect";
 import * as Effect from "effect/Effect";
-import crypto from "node:crypto";
-import type { ScopedPlanStatusSession } from "../apply.ts";
-import { CloudflareApi, CloudflareApiError } from "./api";
-import type { Worker } from "./worker/worker.ts";
+import type { ScopedPlanStatusSession } from "../../apply.ts";
+import { sha256 } from "../../sha256.ts";
+import { CloudflareApi, CloudflareApiError } from "../api.ts";
+import type { Worker } from "./worker.ts";
 
 const MAX_ASSET_SIZE = 1024 * 1024 * 25; // 25MB
 const MAX_ASSET_COUNT = 20_000;
@@ -139,13 +139,8 @@ export const assetsProvider = () =>
                 });
               }
               const hash = yield* fs.readFile(file).pipe(
-                Effect.map((content) =>
-                  crypto
-                    .createHash("sha256")
-                    .update(content + path.extname(name))
-                    .digest("hex")
-                    .slice(0, 32),
-                ),
+                Effect.flatMap(sha256),
+                Effect.map((hash) => hash.slice(0, 32)),
               );
               count++;
               if (count > MAX_ASSET_COUNT) {

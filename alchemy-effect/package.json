@@ -76,10 +76,15 @@
       "import": "./lib/cloudflare/index.js",
       "types": "./lib/cloudflare/index.d.ts"
     },
+    "./cloudflare/live": {
+      "bun": "./src/cloudflare/live.ts",
+      "import": "./lib/cloudflare/live.js",
+      "types": "./lib/cloudflare/live.d.ts"
+    },
     "./cloudflare/assets": {
-      "bun": "./src/cloudflare/assets.fetch.ts",
-      "import": "./lib/cloudflare/assets.fetch.js",
-      "types": "./lib/cloudflare/assets.fetch.d.ts"
+      "bun": "./src/cloudflare/worker/assets.fetch.ts",
+      "import": "./lib/cloudflare/worker/assets.fetch.js",
+      "types": "./lib/cloudflare/worker/assets.fetch.d.ts"
     },
     "./cloudflare/worker": {
       "bun": "./src/cloudflare/worker/index.ts",

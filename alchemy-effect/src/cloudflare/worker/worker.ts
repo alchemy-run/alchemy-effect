@@ -1,6 +1,6 @@
 import type { Workers } from "cloudflare/resources";
 import { Runtime, type RuntimeProps } from "../../runtime.ts";
-import type * as Assets from "../assets.fetch.ts";
+import type * as Assets from "./assets.fetch.ts";
 
 export const WorkerType = "Cloudflare.Worker" as const;
 export type WorkerType = typeof WorkerType;
@@ -44,7 +44,7 @@ export type WorkerAttr<Props extends WorkerProps> = {
     : { enabled: true; previews_enabled: true };
   tags: Props["tags"] extends string[] ? Props["tags"] : string[];
   accountId: string;
-  hash: { assets: string; bundle: string; metadata: string };
+  hash: { assets: string | undefined; bundle: string };
 };
 
 export interface Worker extends Runtime<WorkerType> {

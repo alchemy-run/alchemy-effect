@@ -1,4 +1,5 @@
 import { $ } from "alchemy-effect";
+import * as Assets from "alchemy-effect/cloudflare/assets";
 import * as KV from "alchemy-effect/cloudflare/kv";
 import * as R2 from "alchemy-effect/cloudflare/r2";
 import * as Worker from "alchemy-effect/cloudflare/worker";
@@ -39,10 +40,7 @@ export class Api extends Worker.serve("Api", {
         return new Response("OK");
       }
       default: {
-        return new Response(`Cannot ${request.method} ${pathname}`, {
-          status: 404,
-        });
-        // return yield* Assets.fetch(request);
+        return yield* Assets.fetch(request);
       }
     }
   }),
