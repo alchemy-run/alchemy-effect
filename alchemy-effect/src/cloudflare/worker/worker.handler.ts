@@ -1,6 +1,7 @@
 import type * as runtime from "@cloudflare/workers-types";
 import type { Capability } from "alchemy-effect";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import { CloudflareContext } from "../context.ts";
 
 type Handler = (
@@ -26,7 +27,7 @@ export const toHandler = <H extends Handler>(
       const exit = await Effect.runPromiseExit(
         (factory as HandlerFactory<H, never>).pipe(
           Effect.flatMap((handler) => handler(request, env, ctx)),
-          Effect.provide(CloudflareContext.layer({ env, ctx })),
+          Effect.provide(Layer.succeed(CloudflareContext, { env, ctx })),
         ),
       );
       if (exit._tag === "Success") {

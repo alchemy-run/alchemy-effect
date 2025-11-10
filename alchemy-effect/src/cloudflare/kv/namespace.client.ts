@@ -1,7 +1,7 @@
 import type * as runtime from "@cloudflare/workers-types";
 import * as Effect from "effect/Effect";
 import { declare, type To } from "../../policy.ts";
-import { CloudflareContext } from "../context.ts";
+import { getCloudflareEnvKey } from "../context.ts";
 import { Bind } from "./namespace.binding.ts";
 import type * as KV from "./namespace.ts";
 
@@ -57,5 +57,5 @@ const getFromEnv = Effect.fnUntraced(function* <KV extends KV.Namespace>(
   namespace: KV,
 ) {
   yield* declare<Bind<To<KV>>>();
-  return yield* CloudflareContext.getEnvKey<runtime.KVNamespace>(namespace.id);
+  return yield* getCloudflareEnvKey<runtime.KVNamespace>(namespace.id);
 });

@@ -1,7 +1,7 @@
 import type * as runtime from "@cloudflare/workers-types";
 import * as Effect from "effect/Effect";
 import { declare, type To } from "../../policy.ts";
-import { CloudflareContext } from "../context.ts";
+import { getCloudflareEnvKey } from "../context.ts";
 import { Bind } from "./bucket.binding.ts";
 import type { Bucket } from "./bucket.ts";
 
@@ -76,7 +76,7 @@ const getBucketFromEnv = Effect.fnUntraced(function* <R2Bucket extends Bucket>(
   bucket: R2Bucket,
 ) {
   yield* declare<Bind<To<R2Bucket>>>();
-  return yield* CloudflareContext.getEnvKey<runtime.R2Bucket>(bucket.id);
+  return yield* getCloudflareEnvKey<runtime.R2Bucket>(bucket.id);
 });
 
 const multipartUploadEffect = (multipartUpload: runtime.R2MultipartUpload) => ({
