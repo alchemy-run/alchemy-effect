@@ -1,6 +1,7 @@
 import * as Context from "effect/Context";
 import type { Effect } from "effect/Effect";
 import * as Layer from "effect/Layer";
+import type { Construct } from "./construct.ts";
 import type { Provider, ProviderService } from "./provider.ts";
 
 export const isResource = (r: any): r is Resource => {

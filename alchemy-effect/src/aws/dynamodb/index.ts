@@ -7,4 +7,4 @@ export * from "./table.provider.ts";
 export * from "./table.ts";
 
 // TODO(sam): figure out a better strategy to workaround non-portable types
-export type * as _ from "../../index.ts";
+// export type * as _ from "../../index.ts";

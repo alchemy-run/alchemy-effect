@@ -1,3 +1,4 @@
+import * as Console from "effect/Console";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -6,6 +7,7 @@ import { PlanReviewer, type PlanRejected } from "./approve.ts";
 import type { AnyBinding, BindingService } from "./binding.ts";
 import type { ApplyEvent, ApplyStatus } from "./event.ts";
 import {
+  plan,
   type BindNode,
   type Create,
   type CRUD,
@@ -15,6 +17,7 @@ import {
 } from "./plan.ts";
 import type { Resource } from "./resource.ts";
 import { State } from "./state.ts";
+import type { Service } from "./service.ts";
 
 export interface PlanStatusSession {
   emit: (event: ApplyEvent) => Effect.Effect<void>;
@@ -32,7 +35,34 @@ export class PlanStatusReporter extends Context.Tag("PlanStatusReporter")<
   }
 >() {}
 
-export const apply = <P extends Plan, Err, Req>(
+export const apply: typeof applyPlan &
+  typeof applyResources &
+  typeof applyResourcesPhase = (...args: any[]): any =>
+  Effect.isEffect(args[0])
+    ? applyPlan(args[0] as any)
+    : args.length === 1 && "phase" in args[0]
+      ? applyResourcesPhase(args[0])
+      : applyResources(...args);
+
+export const applyResourcesPhase = <
+  const Phase extends "update" | "destroy",
+  const Resources extends (Service | Resource)[],
+>(props: {
+  resources: Resources;
+  phase: Phase;
+}) => applyPlan(plan(props));
+
+export const applyResources = <const Resources extends (Service | Resource)[]>(
+  ...resources: Resources
+) =>
+  applyPlan(
+    plan({
+      phase: "update",
+      resources,
+    }),
+  );
+
+export const applyPlan = <P extends Plan, Err, Req>(
   plan: Effect.Effect<P, Err, Req>,
 ) =>
   plan.pipe(
@@ -267,7 +297,14 @@ export const apply = <P extends Plan, Err, Req>(
                     news: node.news,
                     bindings: bindingOutputs,
                     session: scopedSession,
+                    ...(node.action === "update"
+                      ? {
+                          output: node.output,
+                          olds: node.olds,
+                        }
+                      : {}),
                   }).pipe(
+                    // TODO(sam): partial checkpoints
                     // checkpoint,
                     Effect.tap(() =>
                       report(phase === "create" ? "created" : "updated"),
@@ -359,29 +396,27 @@ export const apply = <P extends Plan, Err, Req>(
                   });
                   const create = Effect.gen(function* () {
                     yield* report("creating");
-                    return yield* (
-                      node.provider
-                        .create({
-                          id,
-                          news: node.news,
-                          // TODO(sam): these need to only include attach actions
-                          bindings: yield* attachBindings({
-                            resource,
-                            bindings: node.bindings,
-                            target: {
-                              id,
-                              props: node.news,
-                              attr: node.attributes,
-                            },
-                          }),
-                          session: scopedSession,
-                        })
-                        // TODO(sam): delete and create will conflict here, we need to extend the state store for replace
-                        .pipe(
-                          checkpoint,
-                          Effect.tap(() => report("created")),
-                        )
-                    );
+                    return yield* node.provider
+                      .create({
+                        id,
+                        news: node.news,
+                        // TODO(sam): these need to only include attach actions
+                        bindings: yield* attachBindings({
+                          resource,
+                          bindings: node.bindings,
+                          target: {
+                            id,
+                            props: node.news,
+                            attr: node.attributes,
+                          },
+                        }),
+                        session: scopedSession,
+                      })
+                      // TODO(sam): delete and create will conflict here, we need to extend the state store for replace
+                      .pipe(
+                        checkpoint,
+                        Effect.tap(() => report("created")),
+                      );
                   });
                   if (!node.deleteFirst) {
                     yield* destroy;

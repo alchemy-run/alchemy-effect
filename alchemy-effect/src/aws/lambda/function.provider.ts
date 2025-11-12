@@ -183,6 +183,7 @@ export const functionProvider = () =>
           outfile,
           minify: true,
           external: ["@aws-sdk/*", "@smithy/*"],
+          logLevel: "error",
         });
         const code = yield* fs
           .readFile(outfile)

@@ -1,16 +1,29 @@
+import * as Console from "effect/Console";
+import * as Data from "effect/Data";
+import * as Layer from "effect/Layer";
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 
-import { App, type ProviderService } from "alchemy-effect";
+import { App, type Provider, type ProviderService } from "alchemy-effect";
 import type { TimeToLiveSpecification } from "itty-aws/dynamodb";
 import { createTagger, hasTags } from "../../tags.ts";
 import { Account } from "../account.ts";
 import { Region } from "../region.ts";
 import { isScalarAttributeType, toAttributeType } from "./attribute-value.ts";
 import { DynamoDBClient } from "./client.ts";
-import { Table, type TableAttrs, type TableProps } from "./table.ts";
+import {
+  Table,
+  type AnyTable,
+  type TableAttrs,
+  type TableProps,
+} from "./table.ts";
 
-export const tableProvider = () =>
+// we add an explict type to simplify the Layer type errors because the Table interface has a lot of type args
+export const tableProvider = (): Layer.Layer<
+  Provider<AnyTable>,
+  any,
+  App | DynamoDBClient | Region | Account
+> =>
   Table.provider.effect(
     // @ts-expect-error
     Effect.gen(function* () {
@@ -231,14 +244,46 @@ export const tableProvider = () =>
         }),
 
         delete: Effect.fn(function* ({ output }) {
+          console.log("Deleting table");
           yield* dynamodb
             .deleteTable({
               TableName: output.tableName,
             })
             .pipe(
-              // Effect.catchTag("ResourceInUseException", () => Effect.void),
+              Effect.timeout(1000),
+              Effect.tapError((e) => Console.log(e)),
               Effect.catchTag("ResourceNotFoundException", () => Effect.void),
+              Effect.retry({
+                while: (e) =>
+                  e._tag === "ResourceInUseException" ||
+                  e._tag === "InternalServerError" ||
+                  e._tag === "TimeoutException",
+                schedule: Schedule.fixed(100),
+              }),
             );
+
+          console.log("Delete triggered");
+
+          class TableStillExists extends Data.TaggedError("TableStillExists") {}
+
+          console.log("Waiting for table to be deleted");
+
+          while (true) {
+            const table = yield* dynamodb
+              .describeTable({
+                TableName: output.tableName,
+              })
+              .pipe(
+                Effect.catchTag("ResourceNotFoundException", () => Effect.void),
+              );
+
+            if (table === undefined) {
+              console.log({ table });
+              break;
+            }
+          }
+
+          console.log("Table deleted");
         }),
       } satisfies ProviderService<Table<string, TableProps>>;
     }),
