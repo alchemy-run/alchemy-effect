@@ -37,6 +37,7 @@ export const namespaceProvider = () =>
             if (title !== output.title) {
               return { action: "update" };
             }
+            // todo: without this we get extraneous updates
             return { action: "noop" };
           }),
         create: Effect.fn(function* ({ id, news }) {
