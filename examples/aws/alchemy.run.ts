@@ -5,11 +5,11 @@ import * as AWS from "alchemy-effect/aws";
 import * as CLI from "alchemy-effect/cli";
 import { Layer } from "effect";
 import * as Effect from "effect/Effect";
-import { Api } from "./src/index.ts";
+import { Api, Consumer } from "./src/index.ts";
 
 const plan = Alchemy.plan({
   phase: process.argv.includes("--destroy") ? "destroy" : "update",
-  services: [Api],
+  services: [Api, Consumer],
 });
 
 const app = Alchemy.app({ name: "my-app", stage: "dev" });
@@ -28,10 +28,15 @@ const stack = await plan.pipe(
   // Effect.tap((plan) => Console.log(plan)),
   Alchemy.apply,
   Effect.provide(layers),
-  Effect.tap((stack) => Effect.log(stack?.Api.functionUrl)),
+  Effect.tap((stack) =>
+    Effect.log({
+      url: stack?.Consumer.functionUrl,
+      queueUrl: stack?.Messages.queueUrl,
+    }),
+  ),
   Effect.runPromise,
 );
 
 if (stack) {
-  console.log(stack.Api.functionUrl);
+  console.log(stack);
 }
