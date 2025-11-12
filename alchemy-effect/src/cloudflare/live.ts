@@ -2,17 +2,20 @@ import * as Layer from "effect/Layer";
 import * as ESBuild from "../esbuild.ts";
 import { CloudflareAccountId, CloudflareApi } from "./api.ts";
 import * as KV from "./kv/index.ts";
+import { namespaceProvider } from "./kv/namespace.provider.ts";
+import { bucketProvider } from "./r2/bucket.provider.ts";
 import * as R2 from "./r2/index.ts";
-import * as Worker from "./worker/index.ts";
+import { assetsProvider } from "./worker/assets.provider.ts";
+import { workerProvider } from "./worker/worker.provider.ts";
 
 export function providers() {
   return Layer.mergeAll(
     Layer.provideMerge(
-      Worker.workerProvider(),
-      Layer.mergeAll(ESBuild.layer(), Worker.assetsProvider()),
+      workerProvider(),
+      Layer.mergeAll(ESBuild.layer(), assetsProvider()),
     ),
-    KV.namespaceProvider(),
-    R2.bucketProvider(),
+    namespaceProvider(),
+    bucketProvider(),
   );
 }
 

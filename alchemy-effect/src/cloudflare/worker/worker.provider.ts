@@ -1,20 +1,15 @@
 import * as FileSystem from "@effect/platform/FileSystem";
 import * as Path from "@effect/platform/Path";
 import type { Workers } from "cloudflare/resources.mjs";
-import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
-import { App } from "../../app";
-import type { ScopedPlanStatusSession } from "../../apply";
-import { DotAlchemy } from "../../dot-alchemy";
-import type { ESBuild } from "../../esbuild";
-import { sha256 } from "../../sha256";
-import { CloudflareAccountId, CloudflareApi } from "../api";
-import { Assets } from "./assets.provider";
-import { Worker, type WorkerAttr, type WorkerProps } from "./worker";
-
-function load<T extends Context.TagClass<any, any, any>>(id: T["key"]) {
-  return Context.Tag(id)() as T;
-}
+import { App } from "../../app.ts";
+import type { ScopedPlanStatusSession } from "../../apply.ts";
+import { DotAlchemy } from "../../dot-alchemy.ts";
+import { ESBuild } from "../../esbuild.ts";
+import { sha256 } from "../../sha256.ts";
+import { CloudflareAccountId, CloudflareApi } from "../api.ts";
+import { Assets } from "./assets.provider.ts";
+import { Worker, type WorkerAttr, type WorkerProps } from "./worker.ts";
 
 export const workerProvider = () =>
   Worker.provider.effect(
@@ -23,7 +18,7 @@ export const workerProvider = () =>
       const api = yield* CloudflareApi;
       const accountId = yield* CloudflareAccountId;
       const { read, upload } = yield* Assets;
-      const { build } = yield* load<typeof ESBuild>("ESBuild");
+      const { build } = yield* ESBuild;
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const dotAlchemy = yield* DotAlchemy;
