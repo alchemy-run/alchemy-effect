@@ -142,8 +142,6 @@ export const tableProvider = (): Layer.Layer<
           // TODO(sam):
           // Replacements:
           // 1. if you change ImportSourceSpecification
-
-          return { action: "noop" } as const;
         }),
 
         create: Effect.fn(function* ({ id, news, session }) {
@@ -275,6 +273,6 @@ export const tableProvider = (): Layer.Layer<
             }
           }
         }),
-      } satisfies ProviderService<Table<string, TableProps>>;
+      } satisfies ProviderService<Table<string, TableProps<unknown>>>;
     }),
   );

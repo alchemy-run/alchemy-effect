@@ -13,11 +13,8 @@ const logLevel = Logger.withMinimumLogLevel(
   process.env.DEBUG ? LogLevel.Debug : LogLevel.Info,
 );
 
-const aws = AWS.live;
-
 test(
   "create, update, delete subnet",
-  // @ts-expect-error
   Effect.gen(function* () {
     const ec2 = yield* EC2.EC2Client;
 

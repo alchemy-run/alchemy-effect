@@ -23,16 +23,19 @@ export const vpcProvider = () =>
       const tagged = yield* createTagger();
 
       return {
-        diff: ({ news, olds }) =>
-          somePropsAreDifferent(olds, news, [
-            "cidrBlock",
-            "instanceTenancy",
-            "ipv4IpamPoolId",
-            "ipv6IpamPoolId",
-            "ipv6CidrBlock",
-          ])
-            ? { action: "replace" }
-            : undefined,
+        diff: Effect.fn(function* ({ news, olds }) {
+          if (
+            somePropsAreDifferent(olds, news, [
+              "cidrBlock",
+              "instanceTenancy",
+              "ipv4IpamPoolId",
+              "ipv6IpamPoolId",
+              "ipv6CidrBlock",
+            ])
+          ) {
+            return { action: "replace" };
+          }
+        }),
 
         create: Effect.fn(function* ({ id, news, session }) {
           // 1. Prepare tags

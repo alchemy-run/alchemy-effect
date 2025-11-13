@@ -35,7 +35,7 @@ export interface ProviderService<Res extends Resource = Resource> {
     olds: Res["props"];
     news: Res["props"];
     output: Res["attr"];
-  }): Effect.Effect<Diff | void, never, never> | Diff | void;
+  }): Effect.Effect<Diff | void, never, never>;
   precreate?(input: {
     id: string;
     news: Res["props"];
