@@ -6,7 +6,7 @@ import * as Worker from "alchemy-effect/cloudflare/worker";
 import * as Effect from "effect/Effect";
 
 export class MyKV extends KV.Namespace("KV", {
-  title: "namespace",
+  title: "namespace1",
 }) {}
 
 export class MyR2 extends R2.Bucket("R2", {}) {}
@@ -16,6 +16,19 @@ export class Api extends Worker.serve("Api", {
     const { pathname } = new URL(request.url);
     console.log("fetch", pathname);
     switch (pathname) {
+      case "/": {
+        return new Response(
+          [
+            "Available endpoints:",
+            "/kv/get",
+            "/kv/put",
+            "/r2/get",
+            "/r2/put",
+            "/<asset>",
+          ].join("\n"),
+          { status: 200 },
+        );
+      }
       case "/kv/get": {
         const value = yield* KV.get(MyKV, "test");
         return new Response(value ?? "Not Found", {
