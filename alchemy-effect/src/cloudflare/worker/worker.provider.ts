@@ -43,7 +43,7 @@ export const workerProvider = () =>
           account_id: accountId,
           enabled,
         });
-        console.log("setWorkerSubdomain", subdomain);
+        yield* Effect.logDebug("setWorkerSubdomain", subdomain);
       });
 
       const createWorkerName = (id: string, props: WorkerProps | undefined) =>

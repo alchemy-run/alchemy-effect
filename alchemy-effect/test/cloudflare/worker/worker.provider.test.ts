@@ -2,6 +2,7 @@ import { CloudflareAccountId, CloudflareApi } from "@/cloudflare/api";
 import * as CloudflareLive from "@/cloudflare/live";
 import * as R2 from "@/cloudflare/r2";
 import * as Worker from "@/cloudflare/worker";
+import * as Assets from "@/cloudflare/worker/assets.fetch";
 import { $, apply, destroy } from "@/index";
 import { test } from "@/test";
 import { expect } from "@effect/vitest";
@@ -92,6 +93,116 @@ test(
     yield* destroy();
 
     yield* waitForWorkerToBeDeleted(stack.TestWorker.id, accountId);
+  }).pipe(Effect.provide(CloudflareLive.live()), logLevel),
+);
+
+test(
+  "create, update, delete worker with assets",
+  Effect.gen(function* () {
+    const api = yield* CloudflareApi;
+    const accountId = yield* CloudflareAccountId;
+
+    {
+      class TestWorkerWithAssets extends Worker.serve("TestWorkerWithAssets", {
+        fetch: Effect.fn(function* (request) {
+          const url = new URL(request.url);
+          if (url.pathname === "/api") {
+            return new Response("Hello from API");
+          }
+          // Serve assets for everything else
+          return yield* Assets.fetch(request);
+        }),
+      })({
+        main,
+        name: "test-worker-with-assets",
+        bindings: $(),
+        assets: pathe.resolve(import.meta.dirname, "assets"),
+        subdomain: { enabled: true, previews_enabled: true },
+        compatibility: {
+          date: "2024-01-01",
+        },
+      }) {}
+
+      const stack = yield* apply(TestWorkerWithAssets);
+
+      const actualWorker = yield* api.workers.beta.workers.get(
+        stack.TestWorkerWithAssets.name,
+        {
+          account_id: accountId,
+        },
+      );
+      expect(actualWorker.name).toEqual(stack.TestWorkerWithAssets.name);
+
+      // Verify the worker has assets
+      expect(stack.TestWorkerWithAssets.hash.assets).toBeDefined();
+
+      // Verify the worker is accessible via URL
+      if (stack.TestWorkerWithAssets.url) {
+        yield* Effect.logInfo(
+          `Worker with Assets URL: ${stack.TestWorkerWithAssets.url}`,
+        );
+      }
+    }
+
+    {
+      // Update assets by modifying the test
+      class TestWorkerWithAssets extends Worker.serve("TestWorkerWithAssets", {
+        fetch: Effect.fn(function* (request) {
+          const url = new URL(request.url);
+          if (url.pathname === "/api/v2") {
+            return new Response("Hello from API v2");
+          }
+          // Serve assets for everything else
+          return yield* Assets.fetch(request);
+        }),
+      })({
+        main,
+        name: "test-worker-with-assets",
+        bindings: $(),
+        assets: pathe.resolve(import.meta.dirname, "assets"),
+        subdomain: { enabled: true, previews_enabled: true },
+        compatibility: {
+          date: "2024-01-01",
+        },
+      }) {}
+
+      const stack = yield* apply(TestWorkerWithAssets);
+
+      const actualWorker = yield* api.workers.beta.workers.get(
+        stack.TestWorkerWithAssets.name,
+        {
+          account_id: accountId,
+        },
+      );
+      expect(actualWorker.name).toEqual(stack.TestWorkerWithAssets.name);
+      expect(stack.TestWorkerWithAssets.hash.assets).toBeDefined();
+    }
+
+    class TestWorkerWithAssets extends Worker.serve("TestWorkerWithAssets", {
+      fetch: Effect.fn(function* (request) {
+        const url = new URL(request.url);
+        if (url.pathname === "/api/v2") {
+          return new Response("Hello from API v2");
+        }
+        // Serve assets for everything else
+        return yield* Assets.fetch(request);
+      }),
+    })({
+      main,
+      name: "test-worker-with-assets",
+      bindings: $(),
+      assets: pathe.resolve(import.meta.dirname, "assets"),
+      subdomain: { enabled: true, previews_enabled: true },
+      compatibility: {
+        date: "2024-01-01",
+      },
+    }) {}
+
+    const stack = yield* apply(TestWorkerWithAssets);
+
+    yield* destroy();
+
+    yield* waitForWorkerToBeDeleted(stack.TestWorkerWithAssets.id, accountId);
   }).pipe(Effect.provide(CloudflareLive.live()), logLevel),
 );
 
