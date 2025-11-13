@@ -8,6 +8,7 @@
         "@types/bun": "latest",
         "@types/node": "latest",
         "changelogithub": "^13.16.1",
+        "dotenv": "^17.2.3",
         "oxfmt": "^0.9.0",
         "pkg-pr-new": "^0.0.60",
         "typescript": "catalog:",

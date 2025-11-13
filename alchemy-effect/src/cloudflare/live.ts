@@ -8,8 +8,8 @@ import * as R2 from "./r2/index.ts";
 import { assetsProvider } from "./worker/assets.provider.ts";
 import { workerProvider } from "./worker/worker.provider.ts";
 
-export function providers() {
-  return Layer.mergeAll(
+export const providers = () =>
+  Layer.mergeAll(
     Layer.provideMerge(
       workerProvider(),
       Layer.mergeAll(ESBuild.layer(), assetsProvider()),
@@ -17,21 +17,22 @@ export function providers() {
     namespaceProvider(),
     bucketProvider(),
   );
-}
 
-export function bindings() {
-  return Layer.mergeAll(KV.bindFromWorker(), R2.bindFromWorker());
-}
+export const bindings = () =>
+  Layer.mergeAll(KV.bindFromWorker(), R2.bindFromWorker());
 
-export function defaultProviders() {
-  return providers().pipe(Layer.provideMerge(bindings()));
-}
+export const defaultProviders = () =>
+  providers().pipe(Layer.provideMerge(bindings()));
 
-export function live() {
-  return defaultProviders().pipe(
-    Layer.provide(CloudflareAccountId.fromEnv),
-    Layer.provide(CloudflareApi.Default()),
+export const live = () =>
+  defaultProviders().pipe(
+    Layer.provideMerge(
+      Layer.mergeAll(CloudflareAccountId.fromEnv, CloudflareApi.Default()),
+    ),
   );
-}
 
 export default live;
+
+// Layer.mergeAll
+// Layer.provide
+// Layer.provideMerge
