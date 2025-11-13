@@ -1,6 +1,7 @@
 import * as Context from "effect/Context";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
+import { omit } from "effect/Struct";
 import type {
   AnyBinding,
   BindingDiffProps,
@@ -435,15 +436,9 @@ const arePropsChanged = <R extends Resource>(
   oldState: ResourceState | undefined,
   newProps: R["props"],
 ) => {
-  const { bindings: _oldBindings, ...oldPropsWithoutBindings } =
-    oldState?.props ?? {};
-  const { bindings: _newBindings, ...newPropsWithoutBindings } = (newProps ??
-    {}) as {
-    bindings?: unknown;
-  };
   return (
-    JSON.stringify(oldPropsWithoutBindings) !==
-    JSON.stringify(newPropsWithoutBindings)
+    JSON.stringify(omit(oldState?.props ?? {}, "bindings")) !==
+    JSON.stringify(omit((newProps ?? {}) as any, "bindings"))
   );
 };
 
