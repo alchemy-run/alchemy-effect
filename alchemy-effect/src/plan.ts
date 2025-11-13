@@ -433,8 +433,19 @@ class DeleteResourceHasDownstreamDependencies extends Data.TaggedError(
 
 const arePropsChanged = <R extends Resource>(
   oldState: ResourceState | undefined,
-  newState: R["props"],
-) => JSON.stringify(oldState?.props) !== JSON.stringify(newState);
+  newProps: R["props"],
+) => {
+  const { bindings: _oldBindings, ...oldPropsWithoutBindings } =
+    oldState?.props ?? {};
+  const { bindings: _newBindings, ...newPropsWithoutBindings } = (newProps ??
+    {}) as {
+    bindings?: unknown;
+  };
+  return (
+    JSON.stringify(oldPropsWithoutBindings) !==
+    JSON.stringify(newPropsWithoutBindings)
+  );
+};
 
 const diffBindings = Effect.fn(function* ({
   oldState,
@@ -504,7 +515,7 @@ const diffBindings = Effect.fn(function* ({
       return {
         action: "noop",
         binding,
-        attr: undefined,
+        attr: oldBinding.attr,
       } satisfies NoopBind<AnyBinding>;
     },
   );
