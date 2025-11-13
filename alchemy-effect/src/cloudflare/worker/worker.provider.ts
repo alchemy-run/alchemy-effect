@@ -202,24 +202,6 @@ export const workerProvider = () =>
           ) {
             return { action: "update" };
           }
-          return {
-            // TODO: remove when native props check fallback is supported
-            action: ((
-              { bindings: oldBindings, ...olds }: WorkerProps,
-              { bindings: newBindings, ...news }: WorkerProps,
-            ) => {
-              if (JSON.stringify(olds) !== JSON.stringify(news)) {
-                return "update";
-              }
-              return oldBindings.capabilities.length ===
-                newBindings.capabilities.length &&
-                oldBindings.capabilities.every(
-                  (c, index) => c.sid === newBindings.capabilities[index].sid,
-                )
-                ? "noop"
-                : "update";
-            })(olds, news),
-          };
         }),
         create: Effect.fnUntraced(function* ({ id, news, bindings, session }) {
           const name = createWorkerName(id, news);
