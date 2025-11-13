@@ -1,4 +1,3 @@
-import * as Console from "effect/Console";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -16,8 +15,8 @@ import {
   type Update,
 } from "./plan.ts";
 import type { Resource } from "./resource.ts";
-import { State } from "./state.ts";
 import type { Service } from "./service.ts";
+import { State } from "./state.ts";
 
 export interface PlanStatusSession {
   emit: (event: ApplyEvent) => Effect.Effect<void>;
@@ -338,6 +337,7 @@ export const applyPlan = <P extends Plan, Err, Req>(
                 } else if (node.action === "create") {
                   let attr: any;
                   if (node.provider.precreate) {
+                    yield* Effect.logDebug("precreate", id);
                     // stub the resource prior to resolving upstream resources or bindings if a stub is available
                     attr = yield* node.provider.precreate({
                       id,
@@ -346,18 +346,21 @@ export const applyPlan = <P extends Plan, Err, Req>(
                     });
                   }
 
+                  yield* Effect.logDebug("create", id);
                   return yield* createOrUpdate({
                     node,
                     attr,
                     phase: "create",
                   });
                 } else if (node.action === "update") {
+                  yield* Effect.logDebug("update", id);
                   return yield* createOrUpdate({
                     node,
                     attr: node.attributes,
                     phase: "update",
                   });
                 } else if (node.action === "delete") {
+                  yield* Effect.logDebug("delete", id);
                   yield* Effect.all(
                     node.downstream.map((dep) =>
                       dep in plan.resources
@@ -396,27 +399,29 @@ export const applyPlan = <P extends Plan, Err, Req>(
                   });
                   const create = Effect.gen(function* () {
                     yield* report("creating");
-                    return yield* node.provider
-                      .create({
-                        id,
-                        news: node.news,
-                        // TODO(sam): these need to only include attach actions
-                        bindings: yield* attachBindings({
-                          resource,
-                          bindings: node.bindings,
-                          target: {
-                            id,
-                            props: node.news,
-                            attr: node.attributes,
-                          },
-                        }),
-                        session: scopedSession,
-                      })
-                      // TODO(sam): delete and create will conflict here, we need to extend the state store for replace
-                      .pipe(
-                        checkpoint,
-                        Effect.tap(() => report("created")),
-                      );
+                    return yield* (
+                      node.provider
+                        .create({
+                          id,
+                          news: node.news,
+                          // TODO(sam): these need to only include attach actions
+                          bindings: yield* attachBindings({
+                            resource,
+                            bindings: node.bindings,
+                            target: {
+                              id,
+                              props: node.news,
+                              attr: node.attributes,
+                            },
+                          }),
+                          session: scopedSession,
+                        })
+                        // TODO(sam): delete and create will conflict here, we need to extend the state store for replace
+                        .pipe(
+                          checkpoint,
+                          Effect.tap(() => report("created")),
+                        )
+                    );
                   });
                   if (!node.deleteFirst) {
                     yield* destroy;

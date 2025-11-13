@@ -1,7 +1,6 @@
-import * as Console from "effect/Console";
 import * as Data from "effect/Data";
-import * as Layer from "effect/Layer";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
 
 import { App, type Provider, type ProviderService } from "alchemy-effect";
@@ -244,14 +243,12 @@ export const tableProvider = (): Layer.Layer<
         }),
 
         delete: Effect.fn(function* ({ output }) {
-          console.log("Deleting table");
           yield* dynamodb
             .deleteTable({
               TableName: output.tableName,
             })
             .pipe(
               Effect.timeout(1000),
-              Effect.tapError((e) => Console.log(e)),
               Effect.catchTag("ResourceNotFoundException", () => Effect.void),
               Effect.retry({
                 while: (e) =>
@@ -262,11 +259,7 @@ export const tableProvider = (): Layer.Layer<
               }),
             );
 
-          console.log("Delete triggered");
-
           class TableStillExists extends Data.TaggedError("TableStillExists") {}
-
-          console.log("Waiting for table to be deleted");
 
           while (true) {
             const table = yield* dynamodb
@@ -278,12 +271,9 @@ export const tableProvider = (): Layer.Layer<
               );
 
             if (table === undefined) {
-              console.log({ table });
               break;
             }
           }
-
-          console.log("Table deleted");
         }),
       } satisfies ProviderService<Table<string, TableProps>>;
     }),
