@@ -20,14 +20,12 @@ test(
     const api = yield* CloudflareApi;
     const accountId = yield* CloudflareAccountId;
 
-    let stack;
-
     {
       class TestNamespace extends KV.Namespace("TestNamespace", {
         title: "test-namespace-initial",
       }) {}
 
-      stack = yield* apply(TestNamespace);
+      const stack = yield* apply(TestNamespace);
 
       const actualNamespace = yield* api.kv.namespaces.get(
         stack.TestNamespace.namespaceId,
@@ -39,22 +37,20 @@ test(
       expect(actualNamespace.title).toEqual(stack.TestNamespace.title);
     }
 
-    {
-      class TestNamespace extends KV.Namespace("TestNamespace", {
-        title: "test-namespace-updated",
-      }) {}
+    class TestNamespace extends KV.Namespace("TestNamespace", {
+      title: "test-namespace-updated",
+    }) {}
 
-      stack = yield* apply(TestNamespace);
+    const stack = yield* apply(TestNamespace);
 
-      const actualNamespace = yield* api.kv.namespaces.get(
-        stack.TestNamespace.namespaceId,
-        {
-          account_id: accountId,
-        },
-      );
-      expect(actualNamespace.title).toEqual("test-namespace-updated");
-      expect(actualNamespace.id).toEqual(stack.TestNamespace.namespaceId);
-    }
+    const actualNamespace = yield* api.kv.namespaces.get(
+      stack.TestNamespace.namespaceId,
+      {
+        account_id: accountId,
+      },
+    );
+    expect(actualNamespace.title).toEqual("test-namespace-updated");
+    expect(actualNamespace.id).toEqual(stack.TestNamespace.namespaceId);
 
     yield* destroy();
 

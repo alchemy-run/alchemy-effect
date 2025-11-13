@@ -20,15 +20,13 @@ test(
     const api = yield* CloudflareApi;
     const accountId = yield* CloudflareAccountId;
 
-    let stack;
-
     {
       class TestBucket extends R2.Bucket("TestBucket", {
         name: "test-bucket-initial",
         storageClass: "Standard",
       }) {}
 
-      stack = yield* apply(TestBucket);
+      const stack = yield* apply(TestBucket);
 
       const actualBucket = yield* api.r2.buckets.get(stack.TestBucket.name, {
         account_id: accountId,
@@ -37,20 +35,18 @@ test(
       expect(actualBucket.storage_class).toEqual("Standard");
     }
 
-    {
-      class TestBucket extends R2.Bucket("TestBucket", {
-        name: "test-bucket-initial",
-        storageClass: "InfrequentAccess",
-      }) {}
+    class TestBucket extends R2.Bucket("TestBucket", {
+      name: "test-bucket-initial",
+      storageClass: "InfrequentAccess",
+    }) {}
 
-      stack = yield* apply(TestBucket);
+    const stack = yield* apply(TestBucket);
 
-      const actualBucket = yield* api.r2.buckets.get(stack.TestBucket.name, {
-        account_id: accountId,
-      });
-      expect(actualBucket.name).toEqual(stack.TestBucket.name);
-      expect(actualBucket.storage_class).toEqual("InfrequentAccess");
-    }
+    const actualBucket = yield* api.r2.buckets.get(stack.TestBucket.name, {
+      account_id: accountId,
+    });
+    expect(actualBucket.name).toEqual(stack.TestBucket.name);
+    expect(actualBucket.storage_class).toEqual("InfrequentAccess");
 
     yield* destroy();
 
@@ -78,4 +74,3 @@ const waitForBucketToBeDeleted = Effect.fn(function* (
 });
 
 class BucketStillExists extends Data.TaggedError("BucketStillExists") {}
-
