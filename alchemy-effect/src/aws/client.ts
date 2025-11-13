@@ -39,7 +39,7 @@ export const createAWSServiceClientLayer =
               target[prop](...args).pipe(
                 // TODO(sam): make it easier to set log lever for a client
                 Logger.withMinimumLogLevel(
-                  process.env.DEBUG ? LogLevel.Info : LogLevel.Info,
+                  process.env.DEBUG ? LogLevel.Debug : LogLevel.Info,
                 ),
               ),
         });

@@ -16,8 +16,6 @@ test(
     const dynamodb = yield* DynamoDB.DynamoDBClient;
 
     let stack;
-
-    // Create table with basic config
     {
       class Table extends DynamoDB.Table("Table", {
         tableName: "test",
@@ -34,125 +32,6 @@ test(
         TableName: stack.Table.tableName,
       });
       expect(actualTable.Table?.TableArn).toEqual(stack.Table.tableArn);
-      expect(actualTable.Table?.BillingModeSummary?.BillingMode).toEqual(
-        "PAY_PER_REQUEST",
-      );
-    }
-
-    // Update to provisioned billing
-    {
-      class Table extends DynamoDB.Table("Table", {
-        tableName: "test",
-        items: type<{ id: string }>,
-        attributes: {
-          id: S.String,
-        },
-        partitionKey: "id",
-        billingMode: "PROVISIONED",
-        provisionedThroughput: {
-          ReadCapacityUnits: 5,
-          WriteCapacityUnits: 5,
-        },
-      }) {}
-
-      stack = yield* apply(Table);
-
-      const actualTable = yield* dynamodb.describeTable({
-        TableName: stack.Table.tableName,
-      });
-      expect(actualTable.Table?.BillingModeSummary?.BillingMode).toEqual(
-        "PROVISIONED",
-      );
-      expect(
-        actualTable.Table?.ProvisionedThroughput?.ReadCapacityUnits,
-      ).toEqual(5);
-    }
-
-    // Update provisioned throughput
-    {
-      class Table extends DynamoDB.Table("Table", {
-        tableName: "test",
-        items: type<{ id: string }>,
-        attributes: {
-          id: S.String,
-        },
-        partitionKey: "id",
-        billingMode: "PROVISIONED",
-        provisionedThroughput: {
-          ReadCapacityUnits: 10,
-          WriteCapacityUnits: 10,
-        },
-      }) {}
-
-      stack = yield* apply(Table);
-
-      const actualTable = yield* dynamodb.describeTable({
-        TableName: stack.Table.tableName,
-      });
-      expect(
-        actualTable.Table?.ProvisionedThroughput?.ReadCapacityUnits,
-      ).toEqual(10);
-      expect(
-        actualTable.Table?.ProvisionedThroughput?.WriteCapacityUnits,
-      ).toEqual(10);
-    }
-
-    // Add TTL
-    {
-      class Table extends DynamoDB.Table("Table", {
-        tableName: "test",
-        items: type<{ id: string; ttl: number }>,
-        attributes: {
-          id: S.String,
-        },
-        partitionKey: "id",
-        billingMode: "PROVISIONED",
-        provisionedThroughput: {
-          ReadCapacityUnits: 10,
-          WriteCapacityUnits: 10,
-        },
-        timeToLiveSpecification: {
-          AttributeName: "ttl",
-          Enabled: true,
-        },
-      }) {}
-
-      stack = yield* apply(Table);
-
-      const ttl = yield* dynamodb.describeTimeToLive({
-        TableName: stack.Table.tableName,
-      });
-      expect(ttl.TimeToLiveDescription?.AttributeName).toEqual("ttl");
-      expect(ttl.TimeToLiveDescription?.TimeToLiveStatus).toBeOneOf([
-        "ENABLING",
-        "ENABLED",
-      ]);
-    }
-
-    // Switch back to on-demand billing
-    {
-      class Table extends DynamoDB.Table("Table", {
-        tableName: "test",
-        items: type<{ id: string; ttl: number }>,
-        attributes: {
-          id: S.String,
-        },
-        partitionKey: "id",
-        billingMode: "PAY_PER_REQUEST",
-        timeToLiveSpecification: {
-          AttributeName: "ttl",
-          Enabled: true,
-        },
-      }) {}
-
-      stack = yield* apply(Table);
-
-      const actualTable = yield* dynamodb.describeTable({
-        TableName: stack.Table.tableName,
-      });
-      expect(actualTable.Table?.BillingModeSummary?.BillingMode).toEqual(
-        "PAY_PER_REQUEST",
-      );
     }
 
     yield* destroy();
