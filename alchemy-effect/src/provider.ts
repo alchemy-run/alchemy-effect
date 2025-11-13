@@ -1,6 +1,7 @@
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type { ScopedPlanStatusSession } from "./apply.ts";
+import type { Diff } from "./diff.ts";
 import type { Resource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
 
@@ -9,16 +10,6 @@ export type Provider<R extends Resource> = Context.TagClass<
   R["type"],
   ProviderService<R>
 >;
-
-export type Diff =
-  | {
-      action: "update" | "noop";
-      deleteFirst?: undefined;
-    }
-  | {
-      action: "replace";
-      deleteFirst?: boolean;
-    };
 
 type BindingData<Res extends Resource> = [Res] extends [Runtime]
   ? Res["binding"][]
@@ -44,7 +35,7 @@ export interface ProviderService<Res extends Resource = Resource> {
     olds: Res["props"];
     news: Res["props"];
     output: Res["attr"];
-  }): Effect.Effect<Diff | void, never, never>;
+  }): Effect.Effect<Diff | void, never, never> | Diff | void;
   precreate?(input: {
     id: string;
     news: Res["props"];

@@ -8,9 +8,10 @@ import type {
   BindingService,
 } from "./binding.ts";
 import type { Capability } from "./capability.ts";
+import type { Diff } from "./diff.ts";
 import type { Phase } from "./phase.ts";
 import type { Instance } from "./policy.ts";
-import { type Diff, type ProviderService } from "./provider.ts";
+import { type ProviderService } from "./provider.ts";
 import type { Resource, ResourceTags } from "./resource.ts";
 import { isService, type IService, type Service } from "./service.ts";
 import { State, StateStoreError, type ResourceState } from "./state.ts";
@@ -286,12 +287,17 @@ export const plan = <
                     }
 
                     const diff = provider.diff
-                      ? yield* provider.diff({
-                          id,
-                          olds: oldState.props,
-                          news,
-                          output: oldState.output,
-                        })
+                      ? yield* (() => {
+                          const diff = provider.diff({
+                            id,
+                            olds: oldState.props,
+                            news,
+                            output: oldState.output,
+                          });
+                          return Effect.isEffect(diff)
+                            ? diff
+                            : Effect.succeed(diff);
+                        })()
                       : undefined;
 
                     if (!diff && arePropsChanged(oldState, resource.props)) {

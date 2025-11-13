@@ -10,6 +10,7 @@ import { EC2Client } from "./client.ts";
 import { Vpc, type VpcAttrs, type VpcProps } from "./vpc.ts";
 
 import type { EC2 } from "itty-aws/ec2";
+import { somePropsAreDifferent } from "../../diff.ts";
 
 export const vpcProvider = () =>
   Vpc.provider.effect(
@@ -21,36 +22,16 @@ export const vpcProvider = () =>
       const tagged = yield* createTagger();
 
       return {
-        diff: Effect.fn(function* ({ id, news, olds }) {
-          // 1. CIDR block changes
-          if (olds.cidrBlock !== news.cidrBlock) {
-            return { action: "replace" } as const;
-          }
-
-          // 2. Instance tenancy changes
-          if (olds.instanceTenancy !== news.instanceTenancy) {
-            return { action: "replace" } as const;
-          }
-
-          // 3. IPAM pool changes
-          if (olds.ipv4IpamPoolId !== news.ipv4IpamPoolId) {
-            return { action: "replace" } as const;
-          }
-
-          if (olds.ipv6IpamPoolId !== news.ipv6IpamPoolId) {
-            return { action: "replace" } as const;
-          }
-
-          // 4. IPv6 CIDR block changes
-          if (olds.ipv6CidrBlock !== news.ipv6CidrBlock) {
-            return { action: "replace" } as const;
-          }
-
-          // 5. IPv6 pool changes
-          if (olds.ipv6Pool !== news.ipv6Pool) {
-            return { action: "replace" } as const;
-          }
-        }),
+        diff: ({ news, olds }) =>
+          somePropsAreDifferent(olds, news, [
+            "cidrBlock",
+            "instanceTenancy",
+            "ipv4IpamPoolId",
+            "ipv6IpamPoolId",
+            "ipv6CidrBlock",
+          ])
+            ? { action: "replace" }
+            : undefined,
 
         create: Effect.fn(function* ({ id, news, session }) {
           // 1. Prepare tags

@@ -74,7 +74,7 @@ test(
 
     yield* destroy();
 
-    yield* waitForVpcToBeDeleted(stack.TestVpc.vpcId);
+    yield* assertVpcDeleted(stack.TestVpc.vpcId);
   }).pipe(Effect.provide(AWS.live), logLevel),
 );
 
@@ -104,7 +104,11 @@ const expectVpcAttribute = Effect.fn(function* (props: {
     );
 });
 
-const waitForVpcToBeDeleted = Effect.fn(function* (vpcId: string) {
+class VpcAttributeStale extends Data.TaggedError("VpcAttributeStale") {}
+
+class VpcStillExists extends Data.TaggedError("VpcStillExists") {}
+
+export const assertVpcDeleted = Effect.fn(function* (vpcId: string) {
   const ec2 = yield* EC2.EC2Client;
   yield* ec2
     .describeVpcs({
@@ -119,7 +123,3 @@ const waitForVpcToBeDeleted = Effect.fn(function* (vpcId: string) {
       Effect.catchTag("InvalidVpcID.NotFound", () => Effect.void),
     );
 });
-
-class VpcStillExists extends Data.TaggedError("VpcStillExists") {}
-
-class VpcAttributeStale extends Data.TaggedError("VpcAttributeStale") {}

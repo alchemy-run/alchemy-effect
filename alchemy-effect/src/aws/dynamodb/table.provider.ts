@@ -20,7 +20,7 @@ import {
 // we add an explict type to simplify the Layer type errors because the Table interface has a lot of type args
 export const tableProvider = (): Layer.Layer<
   Provider<AnyTable>,
-  any,
+  never,
   App | DynamoDBClient | Region | Account
 > =>
   Table.provider.effect(
