@@ -7,11 +7,6 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { Api } from "./src/api.ts";
 
-const plan = Alchemy.plan({
-  phase: process.argv.includes("--destroy") ? "destroy" : "update",
-  services: [Api],
-});
-
 const app = Alchemy.app({ name: "my-app", stage: "dev-5" });
 
 const providers = Layer.provideMerge(
@@ -24,9 +19,10 @@ const layers = Layer.provideMerge(
   Layer.mergeAll(NodeContext.layer, FetchHttpClient.layer),
 );
 
-const stack = await plan.pipe(
-  // Effect.tap((plan) => Effect.log(plan)),
-  Alchemy.apply,
+const stack = await Alchemy.apply({
+  phase: process.argv.includes("--destroy") ? "destroy" : "update",
+  resources: [Api],
+}).pipe(
   Effect.provide(layers),
   Effect.tap((stack) => Effect.log(stack?.Api.url)),
   Effect.runPromise,
