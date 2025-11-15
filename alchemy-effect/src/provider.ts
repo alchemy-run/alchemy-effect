@@ -1,30 +1,21 @@
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type { ScopedPlanStatusSession } from "./apply.ts";
-import type { Resource } from "./resource.ts";
+import type { Diff } from "./diff.ts";
+import type { IResource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
 
-export type Provider<R extends Resource> = Context.TagClass<
+export type Provider<R extends IResource> = Context.TagClass<
   Provider<R>,
   R["type"],
   ProviderService<R>
 >;
 
-export type Diff =
-  | {
-      action: "update" | "noop";
-      deleteFirst?: undefined;
-    }
-  | {
-      action: "replace";
-      deleteFirst?: boolean;
-    };
-
-type BindingData<Res extends Resource> = [Res] extends [Runtime]
+type BindingData<Res extends IResource> = [Res] extends [Runtime]
   ? Res["binding"][]
   : any[];
 
-export interface ProviderService<Res extends Resource = Resource> {
+export interface ProviderService<Res extends IResource = IResource> {
   // tail();
   // watch();
   // replace(): Effect.Effect<void, never, never>;

@@ -1,4 +1,5 @@
-import { Runtime, type Capability, type RuntimeProps } from "alchemy-effect";
+import type { Capability } from "../../capability.ts";
+import { Runtime, type RuntimeProps } from "../../runtime.ts";
 import type * as IAM from "../iam.ts";
 
 export type { Context } from "aws-lambda";

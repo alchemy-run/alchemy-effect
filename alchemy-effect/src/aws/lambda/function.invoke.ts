@@ -1,6 +1,9 @@
 import * as Effect from "effect/Effect";
 
-import { $, Binding, type Capability, declare, toEnvKey } from "alchemy-effect";
+import { Binding } from "../../binding.ts";
+import type { Capability } from "../../capability.ts";
+import { toEnvKey } from "../../env.ts";
+import { declare, type $ } from "../../policy.ts";
 import { LambdaClient } from "./client.ts";
 import { Function } from "./function.ts";
 

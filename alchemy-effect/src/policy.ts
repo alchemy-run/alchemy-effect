@@ -34,9 +34,6 @@ export interface Policy<
   >;
 }
 
-export type $<T> = Instance<T>;
-export const $ = Policy;
-
 type BindingTags<B extends AnyBinding> = B extends any
   ? Bind<B["runtime"], B["capability"], Extract<B["tag"], string>>
   : never;

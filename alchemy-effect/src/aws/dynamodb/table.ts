@@ -19,9 +19,9 @@ export interface TableProps<
   SSESpecification extends DynamoDB.SSESpecification | undefined =
     | DynamoDB.SSESpecification
     | undefined,
-  TimeToLiveSpecification extends
+  TimeToLiveSpecification extends DynamoDB.TimeToLiveSpecification | undefined =
     | DynamoDB.TimeToLiveSpecification
-    | undefined = DynamoDB.TimeToLiveSpecification | undefined,
+    | undefined,
   WarmThroughput extends DynamoDB.WarmThroughput | undefined =
     | DynamoDB.WarmThroughput
     | undefined,

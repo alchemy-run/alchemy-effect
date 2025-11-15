@@ -14,7 +14,7 @@ import {
   type Plan,
   type Update,
 } from "./plan.ts";
-import type { Resource } from "./resource.ts";
+import type { IResource } from "./resource.ts";
 import type { Service } from "./service.ts";
 import { State } from "./state.ts";
 
@@ -45,13 +45,13 @@ export const apply: typeof applyPlan &
 
 export const applyResourcesPhase = <
   const Phase extends "update" | "destroy",
-  const Resources extends (Service | Resource)[],
+  const Resources extends (Service | IResource)[],
 >(props: {
   resources: Resources;
   phase: Phase;
 }) => applyPlan(plan(props));
 
-export const applyResources = <const Resources extends (Service | Resource)[]>(
+export const applyResources = <const Resources extends (Service | IResource)[]>(
   ...resources: Resources
 ) =>
   applyPlan(
@@ -95,7 +95,7 @@ export const applyPlan = <P extends Plan, Err, Req>(
           resource,
         }: {
           node: BindNode;
-          resource: Resource;
+          resource: IResource;
         }) {
           const binding = node.binding as AnyBinding & {
             // smuggled property (because it interacts poorly with inference)
@@ -122,7 +122,7 @@ export const applyPlan = <P extends Plan, Err, Req>(
           bindings,
           target,
         }: {
-          resource: Resource;
+          resource: IResource;
           bindings: BindNode[];
           target: {
             id: string;
@@ -176,7 +176,7 @@ export const applyPlan = <P extends Plan, Err, Req>(
         }: {
           bindings: BindNode[];
           bindingOutputs: any[];
-          resource: Resource;
+          resource: IResource;
           target: {
             id: string;
             props: any;
@@ -271,7 +271,7 @@ export const applyPlan = <P extends Plan, Err, Req>(
                   attr,
                   phase,
                 }: {
-                  node: Create<Resource> | Update<Resource>;
+                  node: Create<IResource> | Update<IResource>;
                   attr: any;
                   phase: "create" | "update";
                 }) {
@@ -462,7 +462,7 @@ export const applyPlan = <P extends Plan, Err, Req>(
       ?
           | {
               [id in keyof P["resources"]]: P["resources"][id] extends
-                | Delete<Resource>
+                | Delete<IResource>
                 | undefined
                 | never
                 ? never

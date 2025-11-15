@@ -1,10 +1,12 @@
 import type * as EC2 from "itty-aws/ec2";
+import type { Brand } from "../../brand.ts";
 import { Resource } from "../../resource.ts";
 import type { AccountID } from "../account.ts";
 import type { RegionID } from "../region.ts";
+import type { Input } from "../../input.ts";
 
 export const Vpc = Resource<{
-  <const ID extends string, const Props extends VpcProps>(
+  <const ID extends string, const Props extends Input<VpcProps>>(
     id: ID,
     props: Props,
   ): Vpc<ID, Props>;
@@ -12,8 +14,17 @@ export const Vpc = Resource<{
 
 export interface Vpc<
   ID extends string = string,
-  Props extends VpcProps = VpcProps,
-> extends Resource<"AWS.EC2.VPC", ID, Props, VpcAttrs<Props>> {}
+  Props extends Input<VpcProps> = Input<VpcProps>,
+> extends Resource<
+    "AWS.EC2.VPC",
+    ID,
+    Props,
+    VpcAttrs<Input.Resolve<Props, VpcProps>>
+  > {}
+
+type vpc_id = `vpc-${string}`;
+export type VpcId<S extends vpc_id = vpc_id> = Brand<S, "AWS.EC2.VpcId">;
+export const VpcId = <S extends vpc_id>(value: S) => value as VpcId<S>;
 
 export interface VpcProps {
   /**
@@ -88,11 +99,11 @@ export interface VpcProps {
   tags?: Record<string, string>;
 }
 
-export interface VpcAttrs<Props extends VpcProps> {
+export interface VpcAttrs<Props extends VpcProps = VpcProps> {
   /**
    * The ID of the VPC.
    */
-  vpcId: string;
+  vpcId: VpcId;
 
   /**
    * The Amazon Resource Name (ARN) of the VPC.

@@ -1,6 +1,8 @@
 import * as Context from "effect/Context";
 import type { Effect } from "effect/Effect";
 import * as Layer from "effect/Layer";
+import type { Input } from "./input.ts";
+import type { Output } from "./output.ts";
 import type { Provider, ProviderService } from "./provider.ts";
 
 export const isResource = (r: any): r is Resource => {
@@ -8,6 +10,22 @@ export const isResource = (r: any): r is Resource => {
     r && typeof r === "function" && "id" in r && "type" in r && "props" in r
   );
 };
+
+export interface IResource<
+  Type extends string = string,
+  ID extends string = string,
+  Props = unknown,
+  Attrs = unknown,
+> {
+  id: ID;
+  type: Type;
+  props: Props;
+  /** @internal phantom */
+  attr: Attrs;
+  parent: unknown;
+  // oxlint-disable-next-line no-misused-new
+  new (): IResource<Type, ID, Props, Attrs>;
+}
 
 export interface Resource<
   Type extends string = string,
@@ -17,14 +35,27 @@ export interface Resource<
 > {
   id: ID;
   type: Type;
+  Props: unknown;
   props: Props;
+  /** @internal phantom */
   attr: Attrs;
+  /** @internal phantom */
+  dependencies: Input.Dependencies<Props>;
+
+  out<Self extends IResource>(
+    this: Self,
+  ): Output<
+    {
+      [k in keyof Attrs]: Attrs[k];
+    },
+    InstanceType<Self>
+  >;
   parent: unknown;
   // oxlint-disable-next-line no-misused-new
   new (): Resource<Type, ID, Props, Attrs>;
 }
 
-export interface ResourceTags<R extends Resource> {
+export interface ResourceTags<R extends IResource> {
   of<S extends ProviderService<R>>(service: S): S;
   tag: Context.TagClass<Provider<R>, R["type"], ProviderService<R>>;
   effect<Err, Req>(
@@ -33,7 +64,7 @@ export interface ResourceTags<R extends Resource> {
   succeed(service: ProviderService<R>): Layer.Layer<Provider<R>>;
 }
 
-export const Resource = <Ctor extends (id: string, props: any) => Resource>(
+export const Resource = <Ctor extends (id: string, props: any) => IResource>(
   type: ReturnType<Ctor>["type"],
 ) => {
   const Tag = Context.Tag(type)();
