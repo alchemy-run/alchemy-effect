@@ -1,4 +1,4 @@
-import type { IResource } from "./resource.ts";
+import type { Resource } from "./resource.ts";
 import type { Brand } from "./brand.ts";
 
 const OutputSymbol = Symbol.for("alchemy/Output");
@@ -7,7 +7,7 @@ export const isOutput = (value: any): value is Output<any> =>
   value && OutputSymbol in value;
 
 // TODO(sam): doesn't support disjunct unions very well
-export type Output<V, Src extends IResource = any> = [
+export type Output<V, Src extends Resource = any> = [
   Extract<Exclude<V, { __brand: unknown }>, object>,
 ] extends [never]
   ? [Extract<V, string | { __brand: any }>] extends [
@@ -25,12 +25,12 @@ export type Output<V, Src extends IResource = any> = [
           }
         : Output<Extract<V, any[]>[number] | Extract<V, undefined>, Src>[]);
 
-export interface IOut<V = any, Src extends IResource = any> {
+export interface IOut<V = any, Src extends Resource = any> {
   kind: "out";
   value: V;
 }
 
-export interface Out<V = any, Src extends IResource = any> {
+export interface Out<V = any, Src extends Resource = any> {
   /** @internal phantom */
   kind: "out";
   /** @internal phantom */
@@ -66,7 +66,7 @@ type concatOutputs<Outs extends Out[]> = number extends Outs["length"]
 type concatTuple<
   Outs extends Out[],
   Values extends any[] = [],
-  Src extends IResource = never,
+  Src extends Resource = never,
 > = Outs extends [infer H, ...infer Tail extends Out[]]
   ? H extends Out<infer V, infer Src2>
     ? concatTuple<Tail, [...Values, V], Src | Src2>
@@ -80,7 +80,7 @@ type filterOutputs<Outs extends any[]> = number extends Outs["length"]
 type filterTuple<
   Outs extends Out[],
   Values extends any[] = [],
-  Src extends IResource = never,
+  Src extends Resource = never,
 > = Outs extends [infer H, ...infer Tail extends Out[]]
   ? H extends Out<infer V, infer Src2>
     ? filterTuple<Tail, [...Values, V], Src | Src2>
@@ -98,7 +98,13 @@ const proxy = (self: any) =>
           : self.map((value: any) => value[prop as keyof typeof value]),
   });
 
-class Base<Value, Src extends IResource> {
+export const output = <R extends Resource>(
+  resource: R,
+): Output<R["attr"], R> => {
+  throw new Error("Not implemented");
+};
+
+class Base<Value, Src extends Resource> {
   constructor() {
     return proxy(this);
   }
@@ -109,7 +115,7 @@ class Base<Value, Src extends IResource> {
 
 export type OutputAst = Source<any, any> | Chain<any, any> | Concat<any[]>;
 
-class Source<Value, R extends IResource> extends Base<Value, R> {
+class Source<Value, R extends Resource> extends Base<Value, R> {
   // @ts-expect-error - phantom type
   public readonly value: Value;
   constructor(public readonly resource: R) {
@@ -117,7 +123,7 @@ class Source<Value, R extends IResource> extends Base<Value, R> {
   }
 }
 
-class Chain<Value, Src extends IResource> extends Base<Value, Src> {
+class Chain<Value, Src extends Resource> extends Base<Value, Src> {
   constructor(
     public readonly prev: Chain<Value, any>,
     public readonly fn: (value: any) => Value,

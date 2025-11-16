@@ -11,21 +11,23 @@ export const isResource = (r: any): r is Resource => {
   );
 };
 
-export interface IResource<
-  Type extends string = string,
-  ID extends string = string,
-  Props = any,
-  Attrs = any,
-> {
-  id: ID;
-  type: Type;
-  props: Props;
-  /** @internal phantom */
-  attr: Attrs;
-  parent: unknown;
-  // oxlint-disable-next-line no-misused-new
-  new (): IResource<Type, ID, Props, Attrs>;
-}
+// export interface IResource<
+//   Type extends string = string,
+//   ID extends string = string,
+//   Props = any,
+//   Attrs = any,
+// > {
+//   id: ID;
+//   type: Type;
+//   props: Props;
+//   /** @internal phantom */
+//   attr: Attrs;
+//   parent: unknown;
+//   // oxlint-disable-next-line no-misused-new
+//   new (): IResource<Type, ID, Props, Attrs>;
+// }
+
+export type AnyResource = Resource<string, string, any, any>;
 
 export interface Resource<
   Type extends string = string,
@@ -37,12 +39,15 @@ export interface Resource<
   type: Type;
   Props: unknown;
   props: Props;
+  parent: unknown;
   /** @internal phantom */
   attr: Attrs;
   /** @internal phantom */
   // dependencies: Input.Dependencies<Props>;
 
-  // out<Self extends IResource>(
+  // TODO(sam): figure out how to add this back in because people preferred it
+  // ... but, it breaks resource types (e.g. class Table extends DynamoDB.Table("Table", { ... }) is not assignable to DynamoDB.Table<"Table", { ... }>)
+  // out<Self extends Resource>(
   //   this: Self,
   // ): Output<
   //   {
@@ -50,12 +55,12 @@ export interface Resource<
   //   },
   //   InstanceType<Self>
   // >;
-  parent: unknown;
+  // parent: unknown;
   // oxlint-disable-next-line no-misused-new
   new (): Resource<Type, ID, Props, Attrs>;
 }
 
-export interface ResourceTags<R extends IResource<string, string, any, any>> {
+export interface ResourceTags<R extends Resource<string, string, any, any>> {
   of<S extends ProviderService<R>>(service: S): S;
   tag: Context.TagClass<Provider<R>, R["type"], ProviderService<R>>;
   effect<Err, Req>(
@@ -64,7 +69,7 @@ export interface ResourceTags<R extends IResource<string, string, any, any>> {
   succeed(service: ProviderService<R>): Layer.Layer<Provider<R>>;
 }
 
-export const Resource = <Ctor extends (id: string, props: any) => IResource>(
+export const Resource = <Ctor extends (id: string, props: any) => Resource>(
   type: ReturnType<Ctor>["type"],
 ) => {
   const Tag = Context.Tag(type)();

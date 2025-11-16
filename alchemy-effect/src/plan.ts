@@ -12,7 +12,7 @@ import type { Diff } from "./diff.ts";
 import type { Phase } from "./phase.ts";
 import type { Instance } from "./policy.ts";
 import { type ProviderService } from "./provider.ts";
-import type { IResource, ResourceTags } from "./resource.ts";
+import type { AnyResource, Resource, ResourceTags } from "./resource.ts";
 import { isService, type IService, type Service } from "./service.ts";
 import { State, StateStoreError, type ResourceState } from "./state.ts";
 
@@ -77,14 +77,14 @@ export const isCRUD = (node: any): node is CRUD => {
 /**
  * A node in the plan that represents a resource CRUD operation.
  */
-export type CRUD<R extends IResource = IResource> =
+export type CRUD<R extends Resource = AnyResource> =
   | Create<R>
   | Update<R>
   | Delete<R>
   | Replace<R>
   | NoopUpdate<R>;
 
-export type Apply<R extends IResource = IResource> =
+export type Apply<R extends Resource = AnyResource> =
   | Create<R>
   | Update<R>
   | Replace<R>
@@ -100,51 +100,51 @@ const Node = <T extends Apply>(node: T) => ({
   },
 });
 
-export type Create<R extends IResource> = {
+export type Create<R extends Resource = AnyResource> = {
   action: "create";
   resource: R;
   news: any;
-  provider: ProviderService;
+  provider: ProviderService<R>;
   attributes: R["attr"];
   bindings: BindNode[];
 };
 
-export type Update<R extends IResource> = {
+export type Update<R extends Resource = AnyResource> = {
   action: "update";
   resource: R;
   olds: any;
   news: any;
   output: any;
-  provider: ProviderService;
+  provider: ProviderService<R>;
   attributes: R["attr"];
   bindings: BindNode[];
 };
 
-export type Delete<R extends IResource> = {
+export type Delete<R extends Resource = AnyResource> = {
   action: "delete";
   resource: R;
   olds: any;
   output: any;
-  provider: ProviderService;
+  provider: ProviderService<R>;
   bindings: BindNode[];
   attributes: R["attr"];
   downstream: string[];
 };
 
-export type NoopUpdate<R extends IResource> = {
+export type NoopUpdate<R extends Resource = AnyResource> = {
   action: "noop";
   resource: R;
   attributes: R["attr"];
   bindings: BindNode[];
 };
 
-export type Replace<R extends IResource> = {
+export type Replace<R extends Resource = AnyResource> = {
   action: "replace";
   resource: R;
   olds: any;
   news: any;
   output: any;
-  provider: ProviderService;
+  provider: ProviderService<R>;
   bindings: BindNode[];
   attributes: R["attr"];
   deleteFirst?: boolean;
@@ -156,13 +156,13 @@ export type Plan = {
     [id in string]: CRUD;
   };
   deletions: {
-    [id in string]?: Delete<IResource>;
+    [id in string]?: Delete<Resource>;
   };
 };
 
 export const plan = <
   const Phase extends "update" | "destroy",
-  const Resources extends (Service | IResource)[],
+  const Resources extends (Service | Resource)[],
 >({
   phase,
   resources,
@@ -181,12 +181,12 @@ export const plan = <
   type UpstreamResources = {
     [ID in ServiceIDs]: Extract<
       ServiceHosts[ID]["props"]["bindings"]["capabilities"][number]["resource"],
-      IResource
+      Resource
     >;
   }[ServiceIDs];
   type ExplicitResources = Resources[number];
   type ResourceGraph = {
-    [ID in ServiceIDs]: Apply<Extract<Instance<ServiceHosts[ID]>, IResource>>;
+    [ID in ServiceIDs]: Apply<Extract<Instance<ServiceHosts[ID]>, Resource>>;
   } & {
     [ID in UpstreamResources["id"]]: Apply<
       Extract<UpstreamResources, { id: ID }>
@@ -234,7 +234,7 @@ export const plan = <
                 .flatMap((resource) => [
                   ...(isService(resource)
                     ? resource.props.bindings.capabilities.map(
-                        (cap: Capability) => cap.resource as IResource,
+                        (cap: Capability) => cap.resource as Resource,
                       )
                     : []),
                   resource,
@@ -246,9 +246,9 @@ export const plan = <
                 .map(
                   Effect.fn(function* (node) {
                     const id = node.id;
-                    const resource = node as IResource & {
+                    const resource = node as Resource & {
                       provider: ResourceTags<
-                        IResource<string, string, any, any>
+                        Resource<string, string, any, any>
                       >;
                     };
                     const news = resource.props;
@@ -277,7 +277,7 @@ export const plan = <
                       oldState === undefined ||
                       oldState.status === "creating"
                     ) {
-                      return Node<Create<IResource>>({
+                      return Node<Create<Resource>>({
                         action: "create",
                         news,
                         provider,
@@ -303,7 +303,7 @@ export const plan = <
                       : undefined;
 
                     if (!diff && arePropsChanged(oldState, resource.props)) {
-                      return Node<Update<IResource>>({
+                      return Node<Update<Resource>>({
                         action: "update",
                         olds: oldState.props,
                         news,
@@ -315,7 +315,7 @@ export const plan = <
                         attributes: undefined!,
                       });
                     } else if (diff?.action === "replace") {
-                      return Node<Replace<IResource>>({
+                      return Node<Replace<Resource>>({
                         action: "replace",
                         olds: oldState.props,
                         news,
@@ -327,7 +327,7 @@ export const plan = <
                         attributes: undefined!,
                       });
                     } else if (diff?.action === "update") {
-                      return Node<Update<IResource>>({
+                      return Node<Update<Resource>>({
                         action: "update",
                         olds: oldState.props,
                         news,
@@ -339,7 +339,7 @@ export const plan = <
                         attributes: undefined!,
                       });
                     } else {
-                      return Node<NoopUpdate<IResource>>({
+                      return Node<NoopUpdate<Resource>>({
                         action: "noop",
                         resource,
                         bindings,
@@ -387,9 +387,9 @@ export const plan = <
                     type: oldState.type,
                     attr: oldState.output,
                     props: oldState.props,
-                  } as IResource,
+                  } as Resource,
                   downstream: downstream[id] ?? [],
-                } satisfies Delete<IResource>,
+                } satisfies Delete<Resource>,
               ] as const;
             }
           }),
@@ -424,7 +424,7 @@ export const plan = <
         [ID in keyof ResourceGraph]: ResourceGraph[ID];
       };
       deletions: {
-        [id in Exclude<string, keyof ResourceGraph>]?: Delete<IResource>;
+        [id in Exclude<string, keyof ResourceGraph>]?: Delete<Resource>;
       };
     },
     never,
@@ -440,7 +440,7 @@ class DeleteResourceHasDownstreamDependencies extends Data.TaggedError(
   dependencies: string[];
 }> {}
 
-const arePropsChanged = <R extends IResource>(
+const arePropsChanged = <R extends Resource>(
   oldState: ResourceState | undefined,
   newProps: R["props"],
 ) => {

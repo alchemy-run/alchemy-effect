@@ -2,23 +2,23 @@ import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type { ScopedPlanStatusSession } from "./apply.ts";
 import type { Diff } from "./diff.ts";
-import type { IResource } from "./resource.ts";
+import type { Resource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
 import type { Input } from "./input.ts";
 
-export type Provider<R extends IResource> = Context.TagClass<
+export type Provider<R extends Resource> = Context.TagClass<
   Provider<R>,
   R["type"],
   ProviderService<R>
 >;
 
-type BindingData<Res extends IResource> = [Res] extends [Runtime]
+type BindingData<Res extends Resource> = [Res] extends [Runtime]
   ? Res["binding"][]
   : any[];
 
-type Props<Res extends IResource> = Input.ResolveOpaque<Res["props"]>;
+type Props<Res extends Resource> = Input.ResolveOpaque<Res["props"]>;
 
-export interface ProviderService<Res extends IResource = IResource> {
+export interface ProviderService<Res extends Resource = Resource> {
   // tail();
   // watch();
   // replace(): Effect.Effect<void, never, never>;
