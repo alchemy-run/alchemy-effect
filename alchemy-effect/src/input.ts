@@ -1,4 +1,7 @@
-import type { Out, Output } from "./output.ts";
+import type * as S from "effect/Schema";
+import type { Out, Output, IOut } from "./output.ts";
+
+import type { AttributesSchema, TableProps } from "./aws/dynamodb/table.ts";
 
 type Primitive =
   | never
@@ -9,6 +12,9 @@ type Primitive =
   | string
   | bigint
   | symbol;
+type Function = (...args: any[]) => any;
+type Constructor = new (...args: any[]) => any;
+type PolicyLike = { kind: "alchemy/Policy" };
 
 export type Input<T> =
   | T
@@ -24,22 +30,72 @@ export type Input<T> =
           : never);
 
 export declare namespace Input {
-  export type Resolve<T, As> = Extract<_Resolve<T>, As>;
-  type _Resolve<T> =
-    T extends Out<infer V, any>
-      ? V
-      : T extends Primitive
+  type _ = Resolve<
+    TableProps<
+      unknown,
+      AttributesSchema<unknown, never, undefined>,
+      never,
+      undefined
+    >
+  >;
+  type __ = TableProps<
+    unknown,
+    AttributesSchema<unknown, never, undefined>,
+    never,
+    undefined
+  >["partitionKey"];
+
+  export type Resolve<T> =
+    T extends Out<infer U>
+      ? U
+      : T extends
+            | Primitive
+            | Constructor
+            | Function
+            | S.Schema<any>
+            | PolicyLike
         ? T
         : T extends any[]
-          ? _Resolve<T[number]>[]
-          : T extends object
-            ? { [K in keyof T]: _Resolve<T[K]> }
+          ? ResolveArray<T>
+          : T extends Record<string, any>
+            ? {
+                [k in keyof T]: Input.Resolve<T[k]>;
+              }
             : never;
+
+  export type ResolveArray<T extends any[]> = number extends T["length"]
+    ? Resolve<T[number]>[]
+    : ResolveTuple<T>;
+
+  export type ResolveTuple<
+    T extends any[],
+    // TODO(sam): I added the accumulator because it resolved infinite type instantiation
+    Accum extends any[] = [],
+  > = T extends [infer H, ...infer Tail]
+    ? ResolveTuple<Tail, [...Accum, Input.Resolve<H>]>
+    : Accum;
+
+  export type ResolveProps<Props extends Record<string, any>> = {
+    [k in keyof Props]: Input.Resolve<Props[k]>;
+  };
+
+  export type ResolveOpaque<T> =
+    // use true extends IsOut to avoid distribution in the case where we have an Out<T>
+    // because T is a clean type, e.g. Input<SubnetProps> should just be SubnetProps (don't bother resolving the recursive input type variants)
+    true extends IsOut<T> ? ResolveOut<T> : Resolve<T>;
+  type IsOut<T> = T extends Out<infer U> ? true : never;
+
+  export type ResolveOut<T> = T extends Out<infer U> ? U : never;
 
   export type Dependencies<T> =
     T extends Out<any, infer S>
       ? S
-      : T extends Primitive
+      : T extends
+            | Primitive
+            | Constructor
+            | Function
+            | S.Schema<any>
+            | PolicyLike
         ? never
         : T extends any[]
           ? Dependencies<T[number]>

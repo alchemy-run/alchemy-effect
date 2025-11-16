@@ -5,6 +5,7 @@ import * as Schedule from "effect/Schedule";
 
 import type { TimeToLiveSpecification } from "itty-aws/dynamodb";
 import { App } from "../../app.ts";
+import type { Input } from "../../input.ts";
 import type { Provider, ProviderService } from "../../provider.ts";
 import { createTagger, hasTags } from "../../tags.ts";
 import { Account } from "../account.ts";
@@ -31,12 +32,14 @@ export const tableProvider = (): Layer.Layer<
       const region = yield* Region;
       const accountId = yield* Account;
 
-      const createTableName = (id: string, props: TableProps) =>
-        props.tableName ?? `${app.name}-${id}-${app.stage}`;
+      const createTableName = (
+        id: string,
+        props: Input.ResolveProps<TableProps>,
+      ) => props.tableName ?? `${app.name}-${id}-${app.stage}`;
 
       const tagged = yield* createTagger();
 
-      const toKeySchema = (props: TableProps) => [
+      const toKeySchema = (props: Input.ResolveProps<TableProps>) => [
         {
           AttributeName: props.partitionKey as string,
           KeyType: "HASH" as const,
@@ -51,7 +54,7 @@ export const tableProvider = (): Layer.Layer<
           : []),
       ];
 
-      const toAttributeDefinitions = (props: TableProps) =>
+      const toAttributeDefinitions = (props: Input.ResolveProps<TableProps>) =>
         Object.entries(props.attributes)
           .flatMap(([name, schema]) => {
             const type = toAttributeType(schema);
@@ -69,7 +72,9 @@ export const tableProvider = (): Layer.Layer<
           })
           .sort((a, b) => a.AttributeName.localeCompare(b.AttributeName));
 
-      const toAttributeDefinitionsMap = (props: TableProps) =>
+      const toAttributeDefinitionsMap = (
+        props: Input.ResolveProps<TableProps>,
+      ) =>
         Object.fromEntries(
           toAttributeDefinitions(props).map(
             (def) => [def.AttributeName, def.AttributeType] as const,
@@ -117,6 +122,7 @@ export const tableProvider = (): Layer.Layer<
 
       return {
         diff: Effect.fn(function* ({ id, news, olds }) {
+          news.partitionKey;
           const oldTableName = createTableName(id, olds);
           const newTableName = createTableName(id, news);
           if (oldTableName !== newTableName) {
@@ -144,7 +150,7 @@ export const tableProvider = (): Layer.Layer<
           // 1. if you change ImportSourceSpecification
         }),
 
-        create: Effect.fn(function* ({ id, news, session }) {
+        create: Effect.fn(function* ({ id, news, props, session }) {
           const tableName = createTableName(id, news);
 
           const response = yield* dynamodb
@@ -192,10 +198,12 @@ export const tableProvider = (): Layer.Layer<
           return {
             tableName,
             tableId: response.TableId!,
-            tableArn: response.TableArn! as TableAttrs<TableProps>["tableArn"],
+            tableArn: response.TableArn! as TableAttrs<
+              Input.Resolve<TableProps>
+            >["tableArn"],
             partitionKey: news.partitionKey,
             sortKey: news.sortKey,
-          } satisfies TableAttrs<TableProps> as TableAttrs<any>;
+          } satisfies TableAttrs<Input.Resolve<TableProps>> as TableAttrs<any>;
         }),
 
         update: Effect.fn(function* ({ output, news, olds }) {

@@ -1,3 +1,4 @@
+import type { Input } from "../../input.ts";
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 
@@ -10,7 +11,12 @@ import { createTagger, createTagsList } from "../../tags.ts";
 import { Account } from "../account.ts";
 import { Region } from "../region.ts";
 import { EC2Client } from "./client.ts";
-import { Subnet, type SubnetAttrs, type SubnetProps } from "./subnet.ts";
+import {
+  Subnet,
+  type SubnetAttrs,
+  type SubnetProps,
+  type SubnetId,
+} from "./subnet.ts";
 
 export const subnetProvider = () =>
   Subnet.provider.effect(
@@ -24,7 +30,7 @@ export const subnetProvider = () =>
         diff: Effect.fn(function* ({ id, news, olds }) {
           if (
             somePropsAreDifferent(olds, news, [
-              "vpc",
+              "vpcId",
               "cidrBlock",
               "availabilityZone",
               "availabilityZoneId",
@@ -40,7 +46,7 @@ export const subnetProvider = () =>
         create: Effect.fn(function* ({ id, news, session }) {
           // 1. Get VPC ID from the VPC resource
           // TODO(sam): i need to make it possible to pass Resources as input Props to Resources
-          const vpcId = news.vpc.attr.vpcId;
+          const vpcId = news.vpcId;
 
           // 2. Prepare tags
           const alchemyTags = tagged(id);
@@ -68,7 +74,7 @@ export const subnetProvider = () =>
             DryRun: false,
           });
 
-          const subnetId = createResult.Subnet!.SubnetId!;
+          const subnetId = createResult.Subnet!.SubnetId! as SubnetId;
           yield* session.note(`Subnet created: ${subnetId}`);
 
           // 4. Modify subnet attributes if specified
@@ -123,7 +129,7 @@ export const subnetProvider = () =>
             subnetArn:
               `arn:aws:ec2:${region}:${accountId}:subnet/${subnetId}` as SubnetAttrs<SubnetProps>["subnetArn"],
             cidrBlock: subnet.CidrBlock!,
-            vpcId: subnet.VpcId!,
+            vpcId: news.vpcId,
             availabilityZone: subnet.AvailabilityZone!,
             availabilityZoneId: subnet.AvailabilityZoneId,
             state: subnet.State!,

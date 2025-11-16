@@ -4,6 +4,7 @@ import type { ScopedPlanStatusSession } from "./apply.ts";
 import type { Diff } from "./diff.ts";
 import type { IResource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
+import type { Input } from "./input.ts";
 
 export type Provider<R extends IResource> = Context.TagClass<
   Provider<R>,
@@ -15,6 +16,8 @@ type BindingData<Res extends IResource> = [Res] extends [Runtime]
   ? Res["binding"][]
   : any[];
 
+type Props<Res extends IResource> = Input.ResolveOpaque<Res["props"]>;
+
 export interface ProviderService<Res extends IResource = IResource> {
   // tail();
   // watch();
@@ -24,7 +27,7 @@ export interface ProviderService<Res extends IResource = IResource> {
   // run?() {}
   read?(input: {
     id: string;
-    olds: Res["props"] | undefined;
+    olds: Props<Res> | undefined;
     // what is the ARN?
     output: Res["attr"] | undefined; // current state -> synced state
     session: ScopedPlanStatusSession;
@@ -32,32 +35,33 @@ export interface ProviderService<Res extends IResource = IResource> {
   }): Effect.Effect<Res["attr"] | undefined, any, never>;
   diff?(input: {
     id: string;
-    olds: Res["props"];
-    news: Res["props"];
+    olds: Props<Res>;
+    news: Props<Res>;
     output: Res["attr"];
   }): Effect.Effect<Diff | void, never, never>;
   precreate?(input: {
     id: string;
-    news: Res["props"];
+    news: Props<Res>;
     session: ScopedPlanStatusSession;
   }): Effect.Effect<Res["attr"], any, never>;
   create(input: {
     id: string;
-    news: Res["props"];
+    props: Res["props"];
+    news: Props<Res>;
     session: ScopedPlanStatusSession;
     bindings: BindingData<Res>;
   }): Effect.Effect<Res["attr"], any, never>;
   update(input: {
     id: string;
-    news: Res["props"];
-    olds: Res["props"];
+    news: Props<Res>;
+    olds: Props<Res>;
     output: Res["attr"];
     session: ScopedPlanStatusSession;
     bindings: BindingData<Res>;
   }): Effect.Effect<Res["attr"], any, never>;
   delete(input: {
     id: string;
-    olds: Res["props"];
+    olds: Props<Res>;
     output: Res["attr"];
     session: ScopedPlanStatusSession;
     bindings: BindingData<Res>;

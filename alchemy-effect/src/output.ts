@@ -25,7 +25,14 @@ export type Output<V, Src extends IResource = any> = [
           }
         : Output<Extract<V, any[]>[number] | Extract<V, undefined>, Src>[]);
 
+export interface IOut<V = any, Src extends IResource = any> {
+  kind: "out";
+  value: V;
+}
+
 export interface Out<V = any, Src extends IResource = any> {
+  /** @internal phantom */
+  kind: "out";
   /** @internal phantom */
   src: Src;
   /** @internal phantom */

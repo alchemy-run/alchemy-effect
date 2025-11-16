@@ -40,7 +40,7 @@ export interface Resource<
   /** @internal phantom */
   attr: Attrs;
   /** @internal phantom */
-  dependencies: Input.Dependencies<Props>;
+  // dependencies: Input.Dependencies<Props>;
 
   out<Self extends IResource>(
     this: Self,

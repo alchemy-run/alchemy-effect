@@ -19,6 +19,7 @@ export interface Policy<
   in out Capabilities,
   Tags = unknown,
 > {
+  readonly kind: "alchemy/Policy";
   readonly runtime: F;
   readonly tags: Tags[];
   readonly capabilities: Capabilities[];

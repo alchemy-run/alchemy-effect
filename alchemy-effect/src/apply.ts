@@ -399,29 +399,27 @@ export const applyPlan = <P extends Plan, Err, Req>(
                   });
                   const create = Effect.gen(function* () {
                     yield* report("creating");
-                    return yield* (
-                      node.provider
-                        .create({
-                          id,
-                          news: node.news,
-                          // TODO(sam): these need to only include attach actions
-                          bindings: yield* attachBindings({
-                            resource,
-                            bindings: node.bindings,
-                            target: {
-                              id,
-                              props: node.news,
-                              attr: node.attributes,
-                            },
-                          }),
-                          session: scopedSession,
-                        })
-                        // TODO(sam): delete and create will conflict here, we need to extend the state store for replace
-                        .pipe(
-                          checkpoint,
-                          Effect.tap(() => report("created")),
-                        )
-                    );
+                    return yield* node.provider
+                      .create({
+                        id,
+                        news: node.news,
+                        // TODO(sam): these need to only include attach actions
+                        bindings: yield* attachBindings({
+                          resource,
+                          bindings: node.bindings,
+                          target: {
+                            id,
+                            props: node.news,
+                            attr: node.attributes,
+                          },
+                        }),
+                        session: scopedSession,
+                      })
+                      // TODO(sam): delete and create will conflict here, we need to extend the state store for replace
+                      .pipe(
+                        checkpoint,
+                        Effect.tap(() => report("created")),
+                      );
                   });
                   if (!node.deleteFirst) {
                     yield* destroy;

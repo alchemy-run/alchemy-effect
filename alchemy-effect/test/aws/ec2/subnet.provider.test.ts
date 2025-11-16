@@ -25,7 +25,7 @@ test(
       }) {}
 
       class TestSubnet extends EC2.Subnet("TestSubnet", {
-        vpc: TestVpc.out().vpcId,
+        vpcId: TestVpc.out().vpcId,
         cidrBlock: "10.0.1.0/24",
       }) {}
 
@@ -50,7 +50,7 @@ test(
     }) {}
 
     class TestSubnet extends EC2.Subnet("TestSubnet", {
-      vpc: TestVpc.out().vpcId,
+      vpcId: TestVpc.out().vpcId,
       cidrBlock: "10.0.1.0/24",
       mapPublicIpOnLaunch: true,
     }) {}

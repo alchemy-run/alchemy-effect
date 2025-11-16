@@ -1,3 +1,4 @@
+import type { Brand } from "../../brand.ts";
 import type * as EC2 from "itty-aws/ec2";
 import type { Input } from "../../input.ts";
 import { Resource } from "../../resource.ts";
@@ -19,14 +20,14 @@ export interface Subnet<
     "AWS.EC2.Subnet",
     ID,
     Props,
-    SubnetAttrs<Input.Resolve<Props, SubnetProps>>
+    SubnetAttrs<Input.Resolve<Props>>
   > {}
 
 export interface SubnetProps {
   /**
    * The VPC to create the subnet in.
    */
-  vpc: VpcId;
+  vpcId: VpcId;
 
   /**
    * The IPv4 network range for the subnet, in CIDR notation.
@@ -114,11 +115,23 @@ export interface SubnetProps {
   tags?: Record<string, string>;
 }
 
+type subnet_id = `subnet-${string}`;
+export type SubnetId<Id extends subnet_id = subnet_id> = Brand<
+  Id,
+  "AWS.EC2.SubnetId"
+>;
+export const SubnetId = <S extends subnet_id>(value: S) => value as SubnetId<S>;
+
 export interface SubnetAttrs<Props extends SubnetProps> {
+  /**
+   * The ID of the VPC the subnet is in.
+   */
+  vpcId: Props["vpcId"];
+
   /**
    * The ID of the subnet.
    */
-  subnetId: string;
+  subnetId: SubnetId;
 
   /**
    * The Amazon Resource Name (ARN) of the subnet.
@@ -129,11 +142,6 @@ export interface SubnetAttrs<Props extends SubnetProps> {
    * The IPv4 CIDR block for the subnet.
    */
   cidrBlock: string;
-
-  /**
-   * The ID of the VPC the subnet is in.
-   */
-  vpcId: Props["vpc"];
 
   /**
    * The Availability Zone of the subnet.
