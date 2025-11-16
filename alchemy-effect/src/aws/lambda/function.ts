@@ -40,7 +40,7 @@ export interface FunctionBinding {
 }
 
 export interface Function extends Runtime<"AWS.Lambda.Function"> {
-  props: FunctionProps<unknown>;
+  props: FunctionProps<any>;
   attr: FunctionAttr<Extract<this["props"], FunctionProps<any>>>;
   binding: FunctionBinding;
 }

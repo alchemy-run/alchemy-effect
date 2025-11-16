@@ -30,7 +30,7 @@ export type WorkerProps<Req = any> = RuntimeProps<
         assets: string | Worker.AssetsProps;
       });
 
-export type WorkerAttr<Props extends WorkerProps<unknown>> = {
+export type WorkerAttr<Props extends WorkerProps<any>> = {
   id: string;
   name: Props["name"] extends string ? Props["name"] : string;
   logpush: Props["logpush"] extends boolean ? Props["logpush"] : boolean;
@@ -49,8 +49,8 @@ export type WorkerAttr<Props extends WorkerProps<unknown>> = {
 };
 
 export interface Worker extends Runtime<WorkerType> {
-  props: WorkerProps<unknown>;
-  attr: WorkerAttr<Extract<this["props"], WorkerProps<unknown>>>;
+  props: WorkerProps<any>;
+  attr: WorkerAttr<Extract<this["props"], WorkerProps<any>>>;
   binding: {
     bindings: Worker.Binding[];
   };

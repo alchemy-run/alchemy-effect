@@ -48,7 +48,7 @@ export const workerProvider = () =>
 
       const createWorkerName = (
         id: string,
-        props: WorkerProps<unknown> | undefined,
+        props: WorkerProps<any> | undefined,
       ) => props?.name ?? `${app.name}-${id}-${app.stage}`.toLowerCase();
 
       const prepareAssets = Effect.fnUntraced(function* (
@@ -86,7 +86,7 @@ export const workerProvider = () =>
       });
 
       const prepareMetadata = Effect.fnUntraced(function* (
-        props: WorkerProps<unknown>,
+        props: WorkerProps<any>,
       ) {
         const metadata: Workers.ScriptUpdateParams.Metadata = {
           assets: undefined,
@@ -117,10 +117,10 @@ export const workerProvider = () =>
 
       const putWorker = Effect.fnUntraced(function* (
         id: string,
-        news: WorkerProps<unknown>,
+        news: WorkerProps<any>,
         bindings: Worker["binding"][],
-        olds: WorkerProps<unknown> | undefined,
-        output: WorkerAttr<WorkerProps<unknown>> | undefined,
+        olds: WorkerProps<any> | undefined,
+        output: WorkerAttr<WorkerProps<any>> | undefined,
         session: ScopedPlanStatusSession,
       ) {
         const name = createWorkerName(id, news);
@@ -184,7 +184,7 @@ export const workerProvider = () =>
             assets: assets?.hash,
             bundle: bundle.hash,
           },
-        } as WorkerAttr<WorkerProps<unknown>>;
+        } as WorkerAttr<WorkerProps<any>>;
       });
 
       return {

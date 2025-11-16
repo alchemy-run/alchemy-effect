@@ -167,9 +167,7 @@ function statusPriority(status: ApplyStatus): number {
   }
 }
 
-function statusColor(
-  status: ApplyStatus,
-): Parameters<typeof Text>[0]["color"] {
+function statusColor(status: ApplyStatus): Parameters<typeof Text>[0]["color"] {
   switch (status) {
     case "pending":
       return "gray";

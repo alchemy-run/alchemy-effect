@@ -42,14 +42,14 @@ export interface Resource<
   /** @internal phantom */
   // dependencies: Input.Dependencies<Props>;
 
-  out<Self extends IResource>(
-    this: Self,
-  ): Output<
-    {
-      [k in keyof Attrs]: Attrs[k];
-    },
-    InstanceType<Self>
-  >;
+  // out<Self extends IResource>(
+  //   this: Self,
+  // ): Output<
+  //   {
+  //     [k in keyof Attrs]: Attrs[k];
+  //   },
+  //   InstanceType<Self>
+  // >;
   parent: unknown;
   // oxlint-disable-next-line no-misused-new
   new (): Resource<Type, ID, Props, Attrs>;

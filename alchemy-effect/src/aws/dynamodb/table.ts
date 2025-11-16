@@ -78,7 +78,7 @@ export interface AnyTable extends Table<string, any> {}
 
 export interface Table<
   ID extends string = string,
-  Props extends TableProps = TableProps,
+  Props extends TableProps<any, any, any, any> = TableProps<any, any, any, any>,
 > extends Resource<
     "AWS.DynamoDB.Table",
     ID,
@@ -86,14 +86,37 @@ export interface Table<
     TableAttrs<Input.Resolve<Props>>
   > {}
 
+type Tbl = Table<
+  "id",
+  TableProps<
+    { id: string; sk: string },
+    { id: S.Schema<string>; sk: S.Schema<string> },
+    "id",
+    "sk"
+  >
+>;
+type Key = Table.Key<Tbl>;
+type Items = Table.Items<Tbl>;
+type PK = Table.PartitionKey<Tbl>;
+type SK = Table.SortKey<Tbl>;
+type __ = Tbl["props"]["sortKey"];
+type ___ = TableProps<
+  { id: string; sk: string },
+  { id: S.Schema<string>; sk: S.Schema<string> },
+  "id",
+  "sk"
+>["sortKey"];
+
 export declare namespace Table {
   export type PartitionKey<T extends Table> = T["props"]["partitionKey"];
   export type SortKey<T extends Table> = T["props"]["sortKey"];
+  export type Items<T extends Table> = T["props"]["items"];
   export type Key<T extends Table> = {
-    [K in PartitionKey<T>]: T["props"]["attributes"][K];
-  } & SortKey<T> extends infer S extends string
-    ? {
-        [K in S]: T["props"]["attributes"][K];
-      }
-    : {};
+    [K in PartitionKey<T>]: InstanceType<T["props"]["items"]>[K];
+  } & {
+    [K in Exclude<SortKey<T>, undefined>]: Exclude<
+      InstanceType<T["props"]["items"]>[K],
+      undefined
+    >;
+  };
 }

@@ -157,7 +157,7 @@ export const functionProvider = () =>
 
       const bundleCode = Effect.fn(function* (
         id: string,
-        props: FunctionProps,
+        props: FunctionProps<any>,
       ) {
         const handler = props.handler ?? "default";
         let file = path.relative(process.cwd(), props.main);
@@ -216,7 +216,7 @@ export const functionProvider = () =>
         functionName,
       }: {
         id: string;
-        news: FunctionProps;
+        news: FunctionProps<any>;
         roleArn: string;
         code: string | Uint8Array<ArrayBufferLike>;
         env: Record<string, string> | undefined;
