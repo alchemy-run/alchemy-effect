@@ -275,7 +275,7 @@ export const functionProvider = () =>
                             ))
                         );
                       },
-                      schedule: Schedule.fixed(100),
+                      schedule: Schedule.exponential(100),
                     }),
                   );
                 yield* Effect.logDebug(`updated function code ${id}`);

@@ -261,7 +261,7 @@ export const tableProvider = (): Layer.Layer<
                   e._tag === "ResourceInUseException" ||
                   e._tag === "InternalServerError" ||
                   e._tag === "TimeoutException",
-                schedule: Schedule.fixed(100),
+                schedule: Schedule.exponential(100),
               }),
             );
 
