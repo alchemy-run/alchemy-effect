@@ -16,7 +16,7 @@ export * from "./runtime.ts";
 export * from "./service.ts";
 export * from "./type.ts";
 export * from "./$.ts";
-export type { Output, Out } from "./output.ts";
+export type { Output } from "./output.ts";
 export * from "./input.ts";
 
 // export * as AWS from "./aws/index.ts";

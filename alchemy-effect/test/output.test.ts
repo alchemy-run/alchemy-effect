@@ -222,3 +222,33 @@ it.live(
       });
     }),
 );
+
+it.live("Output.resolveUpstream({})", () =>
+  Effect.gen(function* () {
+    const upstream = Output.resolveUpstream({});
+    expect(upstream).toEqual({});
+  }),
+);
+
+it.live("Output.resolveUpstream({ vpcId: $(TestVpc).vpcId })", () =>
+  Effect.gen(function* () {
+    const upstream = Output.resolveUpstream({ vpcId: $(TestVpc).vpcId });
+    expect(upstream).toEqual({
+      TestVpc,
+    });
+  }),
+);
+
+it.live(
+  "Output.resolveUpstream({ vpcArn: [$(TestVpc).vpcArn, $(Bucket).name] })",
+  () =>
+    Effect.gen(function* () {
+      const upstream = Output.resolveUpstream({
+        vpcArn: [$(TestVpc).vpcArn, $(Bucket).name],
+      });
+      expect(upstream).toEqual({
+        TestVpc,
+        Bucket,
+      });
+    }),
+);

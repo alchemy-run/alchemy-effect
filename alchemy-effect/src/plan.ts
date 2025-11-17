@@ -15,6 +15,7 @@ import { type ProviderService } from "./provider.ts";
 import type { AnyResource, Resource, ResourceTags } from "./resource.ts";
 import { isService, type IService, type Service } from "./service.ts";
 import { State, StateStoreError, type ResourceState } from "./state.ts";
+import * as Output from "./output.ts";
 
 export type PlanError = never;
 
@@ -252,6 +253,15 @@ export const plan = <
                       >;
                     };
                     const news = resource.props;
+                    const newsUpstream: {
+                      [Id in string]: Resource;
+                    } = Output.resolveUpstream(news);
+                    if (Object.keys(newsUpstream).length > 0) {
+                      // Ok, so we have upstream resources. That means there are Outputs in the news.
+                      // TODO(sam): how do we determine if we need to change based on changes to upstream resources?
+                      // -> we can no longer pass the literal properties to the provider.diff because they may be Outputs.
+                      // -> we need to know if an upstream property will change
+                    }
 
                     const oldState = yield* state.get(id);
                     const provider = yield* resource.provider.tag;

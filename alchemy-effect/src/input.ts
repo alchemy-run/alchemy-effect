@@ -30,21 +30,6 @@ export type Input<T> =
           : never);
 
 export declare namespace Input {
-  type _ = Resolve<
-    TableProps<
-      unknown,
-      AttributesSchema<unknown, never, undefined>,
-      never,
-      undefined
-    >
-  >;
-  type __ = TableProps<
-    unknown,
-    AttributesSchema<unknown, never, undefined>,
-    never,
-    undefined
-  >["partitionKey"];
-
   export type Resolve<T> =
     T extends Output<infer U>
       ? U

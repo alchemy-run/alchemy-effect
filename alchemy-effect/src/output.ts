@@ -41,8 +41,9 @@ export type OutputProxy<V, Src extends Resource = any, Req = never> = [
             Req
           >[]);
 
-export interface Output<A = any, Src extends Resource = any, Req = never>
+export interface Output<A = any, Src extends Resource = any, Req = any>
   extends Pipeable {
+  readonly kind: "Output";
   map<V2>(fn: (value: A) => V2): OutputProxy<V2, Src, Req>;
   effect<V2, Req2>(
     // Outputs are not allowed to fail, so we use never for the error type
@@ -52,7 +53,7 @@ export interface Output<A = any, Src extends Resource = any, Req = never>
   as<T>(): OutputProxy<T, Src, Req>;
 }
 
-export type Expr<A = any, Src extends AnyResource = AnyResource, Req = never> =
+export type Expr<A = any, Src extends AnyResource = AnyResource, Req = any> =
   | ResourceExpr<A, Src, Req>
   | MapExpr<any, A, Src, Req>
   | EffectExpr<A, any, Src, Req>
@@ -60,10 +61,10 @@ export type Expr<A = any, Src extends AnyResource = AnyResource, Req = never> =
   | AllExpr<Expr<A, Src, Req>[]>
   | LiteralExpr<A>;
 
-export abstract class BaseExpr<A = any, Src extends Resource = any, Req = never>
+export abstract class BaseExpr<A = any, Src extends Resource = any, Req = any>
   implements Output<A, Src, Req>
 {
-  declare readonly kind: string;
+  declare readonly kind: any;
   declare readonly src: Src;
   // we use a kind tag instead of instanceof to protect ourselves from duplicate alchemy-effect module imports
   constructor() {
@@ -244,8 +245,10 @@ export const interpret: <A, Upstream extends Resource, Req>(
     }
   }) as Effect.Effect<any, MissingSourceError>;
 
-export type Upstream<O extends Output<any, any, any>> =
-  O extends Output<infer V, infer Up, infer Req>
+export type Upstream<O extends Output<any, any, any> | Expr<any, any, any>> =
+  O extends
+    | Output<infer V, infer Up, infer Req>
+    | Expr<infer V, infer Up, infer Req>
     ? {
         [Id in keyof Up]: Extract<Up, { id: Id }>;
       }
@@ -272,6 +275,64 @@ export const upstream = <
           ? upstream(expr.upstream)
           : {}) as Upstream<E>;
 
+export type ResolveUpstream<A> = A extends
+  | undefined
+  | null
+  | boolean
+  | number
+  | string
+  | symbol
+  | bigint
+  ? {}
+  : IsAny<A> extends true
+    ? {}
+    : A extends Output<any, infer Upstream, any>
+      ? {
+          [Id in Upstream["id"]]: Extract<Upstream, { id: Id }>;
+        }
+      : A extends readonly any[] | any[]
+        ? ResolveUpstream<A[number]>
+        : A extends Record<string, any>
+          ? {
+              [Id in keyof UnionToIntersection<
+                ResolveUpstream<A[keyof A]>
+              >]: UnionToIntersection<ResolveUpstream<A[keyof A]>>[Id];
+            }
+          : {};
+
+type IsAny<T> = 0 extends 1 & T ? true : false;
+
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
+
+export const resolveUpstream = <const A>(value: A): ResolveUpstream<A> => {
+  if (
+    value === undefined ||
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "number" ||
+    typeof value === "string" ||
+    typeof value === "symbol" ||
+    typeof value === "bigint"
+  ) {
+    return {} as any;
+  } else if (isOutput(value)) {
+    return upstream(value) as any;
+  } else if (Array.isArray(value)) {
+    return Object.fromEntries(
+      value.map((v) => resolveUpstream(v)).flatMap(Object.entries),
+    ) as any;
+  } else if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.values(value).map(resolveUpstream).flatMap(Object.entries),
+    ) as any;
+  }
+  return {} as any;
+};
+
 export const interpolate = <Args extends any[]>(
   template: TemplateStringsArray,
   ...args: Args
@@ -284,21 +345,24 @@ export const interpolate = <Args extends any[]>(
       .join(""),
   ) as any;
 
-export const all = <Outs extends Output[]>(...outs: Outs) =>
+export const all = <Outs extends (Output | Expr)[]>(...outs: Outs) =>
   new AllExpr(outs as any) as unknown as All<Outs>;
 
-export type All<Outs extends Output[]> = number extends Outs["length"]
-  ? [Outs[number]] extends [Output<infer V, infer Src, infer Req>]
+export type All<Outs extends (Output | Expr)[]> = number extends Outs["length"]
+  ? [Outs[number]] extends [
+      | Output<infer V, infer Src, infer Req>
+      | Expr<infer V, infer Src, infer Req>,
+    ]
     ? Output<V, Src, Req>
     : never
   : Tuple<Outs>;
 
 export type Tuple<
-  Outs extends Output[],
+  Outs extends (Output | Expr)[],
   Values extends any[] = [],
   Src extends Resource = never,
   Req = never,
-> = Outs extends [infer H, ...infer Tail extends Output[]]
+> = Outs extends [infer H, ...infer Tail extends (Output | Expr)[]]
   ? H extends Output<infer V, infer Src2, infer Req2>
     ? Tuple<Tail, [...Values, V], Src | Src2, Req | Req2>
     : never
@@ -316,10 +380,10 @@ export type Filter<Outs extends any[]> = number extends Outs["length"]
   : FilterTuple<Outs>;
 
 export type FilterTuple<
-  Outs extends Output[],
+  Outs extends (Output | Expr)[],
   Values extends any[] = [],
   Src extends Resource = never,
-> = Outs extends [infer H, ...infer Tail extends Output[]]
+> = Outs extends [infer H, ...infer Tail extends (Output | Expr)[]]
   ? H extends Output<infer V, infer Src2>
     ? FilterTuple<Tail, [...Values, V], Src | Src2>
     : FilterTuple<Tail, Values, Src>

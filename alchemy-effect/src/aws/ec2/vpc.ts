@@ -1,5 +1,4 @@
 import type * as EC2 from "itty-aws/ec2";
-import type { Brand } from "../../brand.ts";
 import { Resource } from "../../resource.ts";
 import type { AccountID } from "../account.ts";
 import type { RegionID } from "../region.ts";
