@@ -9,6 +9,7 @@ import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Logger from "effect/Logger";
 import * as Schedule from "effect/Schedule";
+import * as Output from "@/output";
 
 const logLevel = Logger.withMinimumLogLevel(
   process.env.DEBUG ? LogLevel.Debug : LogLevel.Info,
@@ -25,7 +26,7 @@ test(
       }) {}
 
       class TestSubnet extends EC2.Subnet("TestSubnet", {
-        vpcId: $(TestVpc).vpcId,
+        vpcId: Output.of(TestVpc).vpcId,
         cidrBlock: "10.0.1.0/24",
       }) {}
 
@@ -50,7 +51,7 @@ test(
     }) {}
 
     class TestSubnet extends EC2.Subnet("TestSubnet", {
-      vpcId: $(TestVpc).vpcId,
+      vpcId: Output.of(TestVpc).vpcId,
       cidrBlock: "10.0.1.0/24",
       mapPublicIpOnLaunch: true,
     }) {}

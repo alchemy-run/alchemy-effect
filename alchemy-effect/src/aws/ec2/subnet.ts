@@ -1,4 +1,3 @@
-import type { Brand } from "../../brand.ts";
 import type * as EC2 from "itty-aws/ec2";
 import type { Input } from "../../input.ts";
 import { Resource } from "../../resource.ts";
@@ -115,12 +114,9 @@ export interface SubnetProps {
   tags?: Record<string, string>;
 }
 
-type subnet_id = `subnet-${string}`;
-export type SubnetId<Id extends subnet_id = subnet_id> = Brand<
-  Id,
-  "AWS.EC2.SubnetId"
->;
-export const SubnetId = <S extends subnet_id>(value: S) => value as SubnetId<S>;
+export type SubnetId<ID extends string = string> = `subnet-${ID}`;
+export const SubnetId = <ID extends string>(id: ID): ID & SubnetId<ID> =>
+  `subnet-${id}` as ID & SubnetId<ID>;
 
 export interface SubnetAttrs<Props extends SubnetProps> {
   /**

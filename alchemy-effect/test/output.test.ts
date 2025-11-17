@@ -205,3 +205,20 @@ it.live("$(TestVpc).vpcId.effect(Console.log)", () =>
     });
   }),
 );
+
+it.live(
+  "Output.interpolate`VPC: ${$(TestVpc).vpcArn} -- Bucket: ${$(Bucket).name}`",
+  () =>
+    Effect.gen(function* () {
+      const output = Output.interpolate`VPC: ${$(TestVpc).vpcArn} -- Bucket: ${$(Bucket).name}`;
+      const upstream = Output.upstream(output);
+      const result = yield* Output.interpret(output, resources);
+      expect(result).toEqual(
+        `VPC: ${vpcAttrs.vpcArn} -- Bucket: ${bucketAttrs.name}`,
+      );
+      expect(upstream).toEqual({
+        TestVpc,
+        Bucket,
+      });
+    }),
+);

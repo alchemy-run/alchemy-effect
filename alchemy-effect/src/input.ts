@@ -1,5 +1,5 @@
 import type * as S from "effect/Schema";
-import type { Out, Output } from "./output.ts";
+import type { Output, OutputProxy } from "./output.ts";
 
 import type { AttributesSchema, TableProps } from "./aws/dynamodb/table.ts";
 
@@ -18,7 +18,7 @@ type PolicyLike = { kind: "alchemy/Policy" };
 
 export type Input<T> =
   | T
-  | Output<T>
+  | OutputProxy<T>
   | (T extends Primitive
       ? never
       : T extends any[]
@@ -46,7 +46,7 @@ export declare namespace Input {
   >["partitionKey"];
 
   export type Resolve<T> =
-    T extends Out<infer U>
+    T extends Output<infer U>
       ? U
       : T extends
             | Primitive
@@ -83,12 +83,12 @@ export declare namespace Input {
     // use true extends IsOut to avoid distribution in the case where we have an Out<T>
     // because T is a clean type, e.g. Input<SubnetProps> should just be SubnetProps (don't bother resolving the recursive input type variants)
     true extends IsOut<T> ? ResolveOut<T> : Resolve<T>;
-  type IsOut<T> = T extends Out<infer U> ? true : never;
+  type IsOut<T> = T extends Output<infer U> ? true : never;
 
-  export type ResolveOut<T> = T extends Out<infer U> ? U : never;
+  export type ResolveOut<T> = T extends Output<infer U> ? U : never;
 
   export type Dependencies<T> =
-    T extends Out<any, infer S>
+    T extends Output<any, infer S>
       ? S
       : T extends
             | Primitive
