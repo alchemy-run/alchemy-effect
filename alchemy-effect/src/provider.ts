@@ -1,8 +1,10 @@
 import * as Context from "effect/Context";
 import type * as Effect from "effect/Effect";
 import type { ScopedPlanStatusSession } from "./apply.ts";
+import type { Diff } from "./diff.ts";
 import type { Resource } from "./resource.ts";
 import type { Runtime } from "./runtime.ts";
+import type { Input } from "./input.ts";
 
 export type Provider<R extends Resource> = Context.TagClass<
   Provider<R>,
@@ -10,19 +12,11 @@ export type Provider<R extends Resource> = Context.TagClass<
   ProviderService<R>
 >;
 
-export type Diff =
-  | {
-      action: "update" | "noop";
-      deleteFirst?: undefined;
-    }
-  | {
-      action: "replace";
-      deleteFirst?: boolean;
-    };
-
 type BindingData<Res extends Resource> = [Res] extends [Runtime]
   ? Res["binding"][]
   : any[];
+
+type Props<Res extends Resource> = Input.ResolveOpaque<Res["props"]>;
 
 export interface ProviderService<Res extends Resource = Resource> {
   // tail();
@@ -33,7 +27,7 @@ export interface ProviderService<Res extends Resource = Resource> {
   // run?() {}
   read?(input: {
     id: string;
-    olds: Res["props"] | undefined;
+    olds: Props<Res> | undefined;
     // what is the ARN?
     output: Res["attr"] | undefined; // current state -> synced state
     session: ScopedPlanStatusSession;
@@ -41,32 +35,34 @@ export interface ProviderService<Res extends Resource = Resource> {
   }): Effect.Effect<Res["attr"] | undefined, any, never>;
   diff?(input: {
     id: string;
-    olds: Res["props"];
+    olds: Props<Res>;
+    // Note: we do not resolve (Props<Res>) here because diff runs during plan
+    // -> we need a way for the diff handlers to work with Outputs
     news: Res["props"];
     output: Res["attr"];
   }): Effect.Effect<Diff | void, never, never>;
   precreate?(input: {
     id: string;
-    news: Res["props"];
+    news: Props<Res>;
     session: ScopedPlanStatusSession;
   }): Effect.Effect<Res["attr"], any, never>;
   create(input: {
     id: string;
-    news: Res["props"];
+    news: Props<Res>;
     session: ScopedPlanStatusSession;
     bindings: BindingData<Res>;
   }): Effect.Effect<Res["attr"], any, never>;
   update(input: {
     id: string;
-    news: Res["props"];
-    olds: Res["props"];
+    news: Props<Res>;
+    olds: Props<Res>;
     output: Res["attr"];
     session: ScopedPlanStatusSession;
     bindings: BindingData<Res>;
   }): Effect.Effect<Res["attr"], any, never>;
   delete(input: {
     id: string;
-    olds: Res["props"];
+    olds: Props<Res>;
     output: Res["attr"];
     session: ScopedPlanStatusSession;
     bindings: BindingData<Res>;

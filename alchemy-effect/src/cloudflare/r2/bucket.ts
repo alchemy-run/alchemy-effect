@@ -1,4 +1,5 @@
 import { Resource } from "../../resource.ts";
+import type { Input } from "../../input.ts";
 
 export type BucketProps = {
   name?: string;
@@ -25,10 +26,10 @@ export interface Bucket<
 > extends Resource<"Cloudflare.R2.Bucket", ID, Props, BucketAttr<Props>> {}
 
 export const Bucket = Resource<{
-  <const ID extends string, const Props extends BucketProps>(
+  <const ID extends string, const Props extends Input<BucketProps>>(
     id: ID,
     props?: Props,
-  ): Bucket<ID, Props>;
+  ): Bucket<ID, Input.Resolve<Props>>;
 }>("Cloudflare.R2.Bucket");
 
 export declare namespace Bucket {

@@ -5,13 +5,14 @@ import { FileSystem } from "@effect/platform";
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 
-import { App, DotAlchemy, type ProviderService } from "alchemy-effect";
-
 import type {
   CreateFunctionRequest,
   CreateFunctionUrlConfigRequest,
   UpdateFunctionUrlConfigRequest,
 } from "itty-aws/lambda";
+import { App } from "../../app.ts";
+import { DotAlchemy } from "../../dot-alchemy.ts";
+import type { ProviderService } from "../../provider.ts";
 import { createTagger, createTagsList, hasTags } from "../../tags.ts";
 import { Account } from "../account.ts";
 import * as IAM from "../iam.ts";
@@ -156,7 +157,7 @@ export const functionProvider = () =>
 
       const bundleCode = Effect.fn(function* (
         id: string,
-        props: FunctionProps,
+        props: FunctionProps<any>,
       ) {
         const handler = props.handler ?? "default";
         let file = path.relative(process.cwd(), props.main);
@@ -215,7 +216,7 @@ export const functionProvider = () =>
         functionName,
       }: {
         id: string;
-        news: FunctionProps;
+        news: FunctionProps<any>;
         roleArn: string;
         code: string | Uint8Array<ArrayBufferLike>;
         env: Record<string, string> | undefined;
@@ -274,7 +275,7 @@ export const functionProvider = () =>
                             ))
                         );
                       },
-                      schedule: Schedule.fixed(100),
+                      schedule: Schedule.exponential(100),
                     }),
                   );
                 yield* Effect.logDebug(`updated function code ${id}`);

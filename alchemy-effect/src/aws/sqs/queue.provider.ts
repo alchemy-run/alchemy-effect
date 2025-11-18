@@ -1,7 +1,8 @@
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 
-import { App, type ProviderService } from "alchemy-effect";
+import { App } from "../../app.ts";
+import type { ProviderService } from "../../provider.ts";
 import { Account } from "../account.ts";
 import { Region } from "../region.ts";
 import { SQSClient } from "./client.ts";

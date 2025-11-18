@@ -1,7 +1,8 @@
-import { Binding, type From } from "alchemy-effect";
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 import type * as Lambda from "itty-aws/lambda";
+import { Binding } from "../../binding.ts";
+import type { From } from "../../policy.ts";
 import { createTagger, hasTags } from "../../tags.ts";
 import { Account } from "../account.ts";
 import {

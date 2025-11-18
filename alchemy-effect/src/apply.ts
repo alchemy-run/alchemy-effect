@@ -271,7 +271,7 @@ export const applyPlan = <P extends Plan, Err, Req>(
                   attr,
                   phase,
                 }: {
-                  node: Create<Resource> | Update<Resource>;
+                  node: Create | Update;
                   attr: any;
                   phase: "create" | "update";
                 }) {

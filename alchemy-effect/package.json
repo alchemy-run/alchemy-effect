@@ -31,6 +31,11 @@
       "import": "./lib/index.js",
       "types": "./src/index.d.ts"
     },
+    "./Output": {
+      "bun": "./src/output.ts",
+      "import": "./lib/output.js",
+      "types": "./lib/output.d.ts"
+    },
     "./aws": {
       "bun": "./src/aws/index.ts",
       "import": "./lib/aws/index.js",
@@ -128,6 +133,7 @@
     "@cloudflare/workers-types": "catalog:",
     "@effect/platform": "catalog:",
     "@effect/platform-node": "catalog:",
+    "@effect/typeclass": "catalog:",
     "@types/aws-lambda": "catalog:",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
