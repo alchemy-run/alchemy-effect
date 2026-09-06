@@ -36,6 +36,10 @@ export * from "./Resource.ts";
 export {
   SecretManager,
   SecretManagerError,
+  makeSecretManager,
+  type SecretManagerBindings,
+  type SecretManagerResult,
+  type SecretManagerIntegration,
   type SecretManagerLayer,
   type SecretManagerResolveOptions,
   type SecretManagerService,

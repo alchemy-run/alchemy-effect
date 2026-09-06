@@ -33,7 +33,8 @@ import { PlanetscaleAuth } from "../Planetscale/AuthProvider.ts";
 import { PrismaAuth } from "../Prisma/AuthProvider.ts";
 import { RailwayAuth } from "../Railway/AuthProvider.ts";
 import {
-  resolveSecretManagerConfig,
+  resolveSecretManager,
+  SecretManagerContext,
   type SecretManagerLayer,
 } from "../SecretManager.ts";
 import * as Stack from "../Stack.ts";
@@ -151,19 +152,21 @@ const sessionServices = Effect.fn("sessionServices")(function* (
   options: SessionServicesOptions,
 ) {
   const fallback = yield* loadConfigProvider(options.envFile);
+  const resolved = yield* resolveSecretManager({
+    secrets: options.secrets,
+    stack: options.stack,
+    stage: options.stage,
+    fallback,
+  });
   const configProvider = withProfileOverride(
-    yield* resolveSecretManagerConfig({
-      secrets: options.secrets,
-      stack: options.stack,
-      stage: options.stage,
-      fallback,
-    }),
+    resolved.provider,
     options.profile,
   );
   return {
     configProvider,
     layer: Layer.mergeAll(
       ConfigProvider.layer(configProvider),
+      Layer.succeed(SecretManagerContext, resolved),
       options.logger ??
         Logger.layer([fileLogger("out")], { mergeWithExisting: true }),
       options.extra ?? Layer.empty,

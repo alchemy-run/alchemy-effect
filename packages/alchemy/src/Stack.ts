@@ -27,7 +27,8 @@ import * as Output from "./Output.ts";
 import type { Provider, ProviderCollectionLike } from "./Provider.ts";
 import type { ResourceBinding, ResourceLike } from "./Resource.ts";
 import {
-  resolveSecretManagerConfig,
+  resolveSecretManager,
+  SecretManagerContext,
   type SecretManagerLayer,
 } from "./SecretManager.ts";
 import { Stage } from "./Stage.ts";
@@ -359,29 +360,26 @@ export const evalStack = <A, B, StackErr, Err, Req>(
 ) => {
   const body = Effect.gen(function* () {
     const fallback = yield* loadConfigProvider(Option.none());
-    let configProvider = fallback;
-    if (effect.secrets !== undefined) {
-      const stack = effect.stackName;
-      if (stack === undefined) {
-        return yield* Effect.die(
-          new Error(
-            "A stack using a secret manager is missing its stack name.",
-          ),
-        );
-      }
-      configProvider = yield* resolveSecretManagerConfig({
-        secrets: effect.secrets,
-        stack,
-        stage: options.stage,
-        fallback,
-      });
+    if (effect.secrets !== undefined && effect.stackName === undefined) {
+      return yield* Effect.die(
+        new Error("A stack using a secret manager is missing its stack name."),
+      );
     }
+    const resolved = yield* resolveSecretManager({
+      secrets: effect.secrets,
+      stack: effect.stackName ?? "",
+      stage: options.stage,
+      fallback,
+    });
+    const configProvider = resolved.provider;
     const stack = yield* effect.pipe(
       Effect.provideService(ConfigProvider, configProvider),
+      Effect.provideService(SecretManagerContext, resolved),
     );
 
     return yield* fn(stack).pipe(
       provideFreshArtifactStore,
+      Effect.provideService(SecretManagerContext, resolved),
       Effect.provide(
         Layer.succeedContext(stack.services).pipe(
           Layer.provideMerge(Layer.succeed(ConfigProvider, configProvider)),

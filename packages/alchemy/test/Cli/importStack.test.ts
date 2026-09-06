@@ -38,6 +38,9 @@ const fixtureRelativePath = path.relative(process.cwd(), fixtureAbsolutePath);
 const secretManagerFixture = fileURLToPath(
   import.meta.resolve("./fixtures/secret-manager-stack.ts"),
 );
+const secretManagerBindingsFixture = fileURLToPath(
+  import.meta.resolve("./fixtures/secret-manager-bindings-stack.ts"),
+);
 
 const runFixture = (path: string) =>
   TestCore.run(
@@ -54,6 +57,26 @@ const runFixture = (path: string) =>
   );
 
 describe("importStack", () => {
+  test("exposes typed bindings through CLI sessions and programmatic stack evaluation", async () => {
+    const session = await TestCore.run(
+      open({ entrypoint: secretManagerBindingsFixture, stage: "preview" }).pipe(
+        Effect.provide(CliKit.layer({ input: false })),
+      ),
+      { providers: TestLayers() },
+    );
+    const output = session.stack.output as {
+      API_KEY: Redacted.Redacted<string>;
+      PUBLIC_URL: string;
+    };
+    expect(Redacted.value(output.API_KEY)).toBe("secret-preview");
+    expect(output.PUBLIC_URL).toBe("https://preview.example.com");
+    const programmatic = (await runFixture(secretManagerBindingsFixture)) as {
+      API_KEY: Redacted.Redacted<string>;
+      PUBLIC_URL: string;
+    };
+    expect(Redacted.value(programmatic.API_KEY)).toBe("secret-test");
+    expect(programmatic.PUBLIC_URL).toBe("https://test.example.com");
+  });
   test("loads stack entrypoint via relative path", () =>
     expect(runFixture(fixtureRelativePath)).resolves.toBe(
       "import-stack-fixture",

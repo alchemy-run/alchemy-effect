@@ -1,6 +1,7 @@
 import {
   SecretManager,
   SecretManagerError,
+  makeSecretManager,
   type SecretManagerLayer,
   type SecretManagerService,
 } from "alchemy";
@@ -8,6 +9,33 @@ import * as ConfigProvider from "effect/ConfigProvider";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Redacted from "effect/Redacted";
+
+/** A schema/codegen-backed integration knows its binding names and types. */
+export const externalIntegration = (onResolve: () => void = () => {}) =>
+  makeSecretManager({
+    name: "External typed fixture",
+    resolve: ({ stage }) =>
+      Effect.sync(() => {
+        onResolve();
+        return {
+          provider: ConfigProvider.fromUnknown({
+            API_KEY: `secret-${stage}`,
+            PUBLIC_URL: `https://${stage}.example.com`,
+            FEATURE_ENABLED: "true",
+            DEPLOY_TOKEN: "tooling-only",
+          }),
+          bindings: {
+            API_KEY: Config.redacted("API_KEY"),
+            PUBLIC_URL: Config.string("PUBLIC_URL"),
+            FEATURE_ENABLED: Config.boolean("FEATURE_ENABLED"),
+            __INTEGRATION_ENV: Config.succeed(
+              Redacted.make(`runtime-${stage}`),
+            ),
+          },
+        };
+      }),
+  });
 
 const service: SecretManagerService = {
   name: "External fixture",

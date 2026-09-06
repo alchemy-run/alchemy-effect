@@ -34,6 +34,8 @@ const resolve = (
       }),
       ConfigProvider.ConfigProvider,
       fallback,
+    ).pipe(
+      Effect.map((result) => ("provider" in result ? result.provider : result)),
     );
   });
 

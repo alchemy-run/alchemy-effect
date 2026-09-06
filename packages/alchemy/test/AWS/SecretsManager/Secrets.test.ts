@@ -34,6 +34,8 @@ const resolve = (
       Context.get(context, SecretManagerService).resolve({ stack, stage }),
       ConfigProvider.ConfigProvider,
       fallback,
+    ).pipe(
+      Effect.map((result) => ("provider" in result ? result.provider : result)),
     );
   });
 
