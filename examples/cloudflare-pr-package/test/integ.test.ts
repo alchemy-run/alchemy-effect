@@ -1,6 +1,7 @@
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Test from "alchemy/Test/Bun";
 import { expect } from "bun:test";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Schedule from "effect/Schedule";
 import * as HttpBody from "effect/unstable/http/HttpBody";
@@ -80,14 +81,18 @@ const assignTags = (
   project: string,
   hash: string,
   tags: string[],
-) =>
-  client.execute(
-    HttpClientRequest.put(`${url}/projects/${project}/tags`).pipe(
-      HttpClientRequest.bearerToken(token),
-      HttpClientRequest.setHeader("Alchemy-Tags", JSON.stringify(tags)),
-      HttpClientRequest.setHeader("Alchemy-Tarball-Hash", hash),
-    ),
+  extraHeaders: Record<string, string> = {},
+) => {
+  let req = HttpClientRequest.put(`${url}/projects/${project}/tags`).pipe(
+    HttpClientRequest.bearerToken(token),
+    HttpClientRequest.setHeader("Alchemy-Tags", JSON.stringify(tags)),
+    HttpClientRequest.setHeader("Alchemy-Tarball-Hash", hash),
   );
+  for (const [name, value] of Object.entries(extraHeaders)) {
+    req = req.pipe(HttpClientRequest.setHeader(name, value));
+  }
+  return client.execute(req);
+};
 
 const getPackage = (
   client: Client,
@@ -112,6 +117,19 @@ const deleteTag = (
     ).pipe(HttpClientRequest.bearerToken(token)),
   );
 
+const deletePullRequest = (
+  client: Client,
+  url: string,
+  token: string,
+  project: string,
+  number: number,
+) =>
+  client.execute(
+    HttpClientRequest.make("DELETE")(
+      `${url}/projects/${project}/pull-requests/${number}`,
+    ).pipe(HttpClientRequest.bearerToken(token)),
+  );
+
 // Tag lookups go through Workers KV, which is eventually consistent, and the
 // edge can return a transient 5xx. Poll the request until it reaches the
 // expected status (or give up after ~30s) so assertions test the converged
@@ -119,12 +137,13 @@ const deleteTag = (
 const pollUntilStatus = <A extends { readonly status: number }, E, R>(
   request: Effect.Effect<A, E, R>,
   status: number,
+  times = 30,
 ): Effect.Effect<A, E, R> =>
   request.pipe(
     Effect.repeat({
       schedule: Schedule.spaced("1 second"),
       until: (res) => res.status === status,
-      times: 30,
+      times,
     }),
   );
 
@@ -322,6 +341,213 @@ test(
       404,
     );
     expect(collected.status).toBe(404);
+  }),
+  { timeout: 180_000 },
+);
+
+test(
+  "Alchemy-Pull-Request must be a GitHub owner/repo#number",
+  Effect.gen(function* () {
+    const { url, authToken } = yield* stack;
+    const client = yield* HttpClient.HttpClient;
+    expect((yield* warmUp(client, url)).status).toBe(401);
+
+    const project = "pr-header-test";
+    const content = "pr-header-bundle";
+    const hash = sha256(content);
+
+    expect(
+      (yield* pollUntilStatus(
+        upload(client, url, authToken, project, content),
+        200,
+      )).status,
+    ).toBe(200);
+
+    const invalid = yield* assignTags(
+      client,
+      url,
+      authToken,
+      project,
+      hash,
+      ["pr-1"],
+      { "Alchemy-Pull-Request": "not-a-pr" },
+    );
+    expect(invalid.status).toBe(400);
+
+    const tagged = yield* pollUntilStatus(
+      assignTags(client, url, authToken, project, hash, ["pr-1", "v1"], {
+        "Alchemy-Pull-Request": "alchemy-run/alchemy#550",
+      }),
+      200,
+    );
+    expect(tagged.status).toBe(200);
+    const body = (yield* tagged.json) as { pullRequest?: string };
+    expect(body.pullRequest).toBe("alchemy-run/alchemy#550");
+
+    expect(
+      (yield* deleteTag(client, url, authToken, project, "pr-1")).status,
+    ).toBe(200);
+    expect(
+      (yield* deleteTag(client, url, authToken, project, "v1")).status,
+    ).toBe(200);
+  }),
+  { timeout: 180_000 },
+);
+
+test(
+  "DELETE /pull-requests/:n drops PR tags and keeps unrelated ones",
+  Effect.gen(function* () {
+    const { url, authToken } = yield* stack;
+    const client = yield* HttpClient.HttpClient;
+    expect((yield* warmUp(client, url)).status).toBe(401);
+
+    const project = "pr-teardown-test";
+    const content = "pr-teardown-bundle";
+    const hash = sha256(content);
+
+    expect(
+      (yield* pollUntilStatus(
+        upload(client, url, authToken, project, content),
+        200,
+      )).status,
+    ).toBe(200);
+
+    expect(
+      (yield* pollUntilStatus(
+        assignTags(client, url, authToken, project, hash, ["main"]),
+        200,
+      )).status,
+    ).toBe(200);
+
+    expect(
+      (yield* pollUntilStatus(
+        assignTags(
+          client,
+          url,
+          authToken,
+          project,
+          hash,
+          ["pr-99", "deadbeef"],
+          { "Alchemy-Pull-Request": "alchemy-run/alchemy#99" },
+        ),
+        200,
+      )).status,
+    ).toBe(200);
+
+    expect(
+      (yield* deletePullRequest(client, url, authToken, project, 99)).status,
+    ).toBe(200);
+
+    expect(
+      (yield* pollUntilStatus(getTag(client, url, project, "pr-99"), 404))
+        .status,
+    ).toBe(404);
+    expect(
+      (yield* pollUntilStatus(getTag(client, url, project, "deadbeef"), 404))
+        .status,
+    ).toBe(404);
+    expect(
+      (yield* pollUntilStatus(getTag(client, url, project, "main"), 200))
+        .status,
+    ).toBe(200);
+    expect((yield* getPackage(client, url, project, hash)).status).toBe(200);
+
+    expect(
+      (yield* deleteTag(client, url, authToken, project, "main")).status,
+    ).toBe(200);
+  }),
+  { timeout: 180_000 },
+);
+
+test(
+  "TTL expiry deletes a tarball that is not tied to a pull request",
+  Effect.gen(function* () {
+    const { url, authToken } = yield* stack;
+    const client = yield* HttpClient.HttpClient;
+    expect((yield* warmUp(client, url)).status).toBe(401);
+
+    const project = "ttl-no-pr";
+    const content = "ttl-no-pr-bundle";
+    const hash = sha256(content);
+
+    expect(
+      (yield* pollUntilStatus(
+        upload(client, url, authToken, project, content),
+        200,
+      )).status,
+    ).toBe(200);
+    expect(
+      (yield* pollUntilStatus(
+        assignTags(client, url, authToken, project, hash, ["ephemeral"], {
+          "Alchemy-TTL": "5 seconds",
+        }),
+        200,
+      )).status,
+    ).toBe(200);
+
+    const gone = yield* pollUntilStatus(
+      getPackage(client, url, project, hash),
+      404,
+      90,
+    );
+    expect(gone.status).toBe(404);
+  }),
+  { timeout: 180_000 },
+);
+
+test(
+  "TTL expiry renews while the tied pull request is still open",
+  Effect.gen(function* () {
+    const { url, authToken } = yield* stack;
+    const client = yield* HttpClient.HttpClient;
+    expect((yield* warmUp(client, url)).status).toBe(401);
+
+    const github = yield* client.get(
+      "https://api.github.com/repos/nodejs/node/pulls?state=open&per_page=1",
+    );
+    expect(github.status).toBe(200);
+    const pulls = (yield* github.json) as Array<{
+      number?: number;
+      html_url?: string;
+    }>;
+    const open = pulls[0];
+    expect(open?.number).toBeGreaterThan(0);
+
+    const project = "ttl-open-pr";
+    const content = "ttl-open-pr-bundle";
+    const hash = sha256(content);
+
+    expect(
+      (yield* pollUntilStatus(
+        upload(client, url, authToken, project, content),
+        200,
+      )).status,
+    ).toBe(200);
+    expect(
+      (yield* pollUntilStatus(
+        assignTags(
+          client,
+          url,
+          authToken,
+          project,
+          hash,
+          [`pr-${open!.number}`],
+          {
+            "Alchemy-TTL": "5 seconds",
+            "Alchemy-Pull-Request": `nodejs/node#${open!.number}`,
+          },
+        ),
+        200,
+      )).status,
+    ).toBe(200);
+
+    yield* Effect.sleep(Duration.millis(20_000));
+    expect((yield* getPackage(client, url, project, hash)).status).toBe(200);
+
+    expect(
+      (yield* deletePullRequest(client, url, authToken, project, open!.number!))
+        .status,
+    ).toBe(200);
   }),
   { timeout: 180_000 },
 );
